@@ -171,14 +171,14 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    if (user.isLocked) {
+    /*if (user.isLocked) {
       const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
       return res.status(423).json({
         success: false,
         message: `Account locked. Try again in ${minutesLeft} minute(s).`,
         code: 'ACCOUNT_LOCKED',
       });
-    }
+    }*/
 
     const isMatch = await user.comparePassword(password);
     const ip = getIp(req);
