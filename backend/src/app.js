@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api', apiLimiter);
 app.use(passport.initialize());   // ADDITION 1b: Initialize Passport middleware
 app.use('/api/auth', authRoutes);
-app
+app.use('/api/oauth', oauthRoutes);  // ADDITION 1d: OAuth routes under /api/auth/oauth
 app.use('/api/guardian', guardianRoutes);   // replaces /api/parent
 
 app.use('/api/admin', adminRoutes);

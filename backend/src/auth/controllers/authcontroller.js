@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import User from '../../models/User.js';
-import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/JWT.js';
+import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 import { validatePassword, validateAge, isMinor } from '../../utils/Validators.js';
 import {
   sendVerificationEmail,
@@ -126,7 +126,7 @@ export const register = async (req, res) => {
 
     try{
     // Email verification token
-    const verifyToken = user.emailVerificationToken();
+    const verifyToken = user.generateEmailVerificationToken();
 
     if (resolvedRole === ROLES.CHILD) {
       const inviteToken = user.guardianInviteToken(guardianEmail);

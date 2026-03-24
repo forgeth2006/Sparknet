@@ -15,8 +15,8 @@ import  {
   completeOnboarding,
   getLinkedProviders,
   unlinkProvider,
-} from '../controllers/oauthcontroller.js'
-import  { protect } from '../middleware/auth.js';
+} from '../../auth/controllers/oauthcontroller.js'
+import  { protect } from '../../middleware/Auth.js'
 
 // ─── Passport authenticate options ───────────────────────────────────────────
 // session: false — we use JWT, not Passport sessions

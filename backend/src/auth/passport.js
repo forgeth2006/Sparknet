@@ -13,7 +13,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import AppleStrategy from 'passport-apple';
-import User from '../models/User';
+import User from '../models/User.js';
 
 const { ROLES, MODES, ACCOUNT_STATUS } = User;
 

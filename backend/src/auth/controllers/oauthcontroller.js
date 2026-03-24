@@ -1,15 +1,6 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// FILE: controllers/oauthController.js
-//
-// Handles what happens AFTER Passport's verify callback completes.
-// By the time these functions run, req.user is already populated by Passport.
-//
-// Function names follow the same pattern as authController.js.
-// Uses sendTokenResponse imported from authController — zero duplication.
-// ─────────────────────────────────────────────────────────────────────────────
+import User from '../../models/User.js';
 
-import User from '../models/User.js';
-import  { generateAccessToken, generateRefreshToken, hashRefreshToken } from ('../utils/jwt');
+import  { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 
 const { ROLES, MODES, ACCOUNT_STATUS } = User;
 
@@ -96,7 +87,7 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
 //      → Redirect to CLIENT_URL with token in query param
 //        Frontend reads the token from URL and stores it
 // ─────────────────────────────────────────────────────────────────────────────
-exports.handleOAuthCallback = async (req, res) => {
+export const handleOAuthCallback = async (req, res) => {
   try {
     // Passport already authenticated user and set req.user
     if (!req.user) {
@@ -187,7 +178,7 @@ exports.handleOAuthCallback = async (req, res) => {
 // @route   GET /api/auth/*/callback  (Passport failure redirect)
 // @access  Public
 // ─────────────────────────────────────────────────────────────────────────────
-exports.handleOAuthFailure = (req, res) => {
+export const handleOAuthFailure = (req, res) => {
   const message = req.query.error_description || 'Authentication was cancelled or denied';
   return res.redirect(
     `${process.env.CLIENT_URL}/auth/error?message=${encodeURIComponent(message)}`
@@ -203,7 +194,7 @@ exports.handleOAuthFailure = (req, res) => {
 // Called by frontend onboarding page. Once complete, needsOnboarding = false
 // and the user can access the full platform.
 // ─────────────────────────────────────────────────────────────────────────────
-exports.completeOnboarding = async (req, res) => {
+export const completeOnboarding = async (req, res) => {
   try {
     const { dateOfBirth, termsAccepted, username } = req.body;
 
@@ -277,7 +268,7 @@ exports.completeOnboarding = async (req, res) => {
 // @route   GET /api/auth/oauth/linked-providers
 // @access  Private (protect middleware)
 // ─────────────────────────────────────────────────────────────────────────────
-exports.getLinkedProviders = async (req, res) => {
+export const getLinkedProviders = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
       'authProvider googleId facebookId twitterId appleId'
@@ -309,7 +300,7 @@ exports.getLinkedProviders = async (req, res) => {
 //   - Cannot unlink if it's the only auth method (no password + only 1 provider)
 //   - Cannot unlink the primary provider without setting another
 // ─────────────────────────────────────────────────────────────────────────────
-exports.unlinkProvider = async (req, res) => {
+export const unlinkProvider = async (req, res) => {
   try {
     const { provider } = req.params;
     const validProviders = ['google', 'facebook', 'twitter', 'apple'];

@@ -161,9 +161,49 @@ const userSchema = new mongoose.Schema(
         success: Boolean,
       },
     ],
+    googleId: {
+      type: String,
+      default: null
+    },
+    facebookId: {
+      type: String,
+      default: null
+    },
+    twitterId: {
+      type: String,
+      default: null
+    },
+    appleId: {
+      type: String,
+      default: null
+    },
+   
+    // ─── OAuth Onboarding Flag ─────────────────────────────────────────────────
+    // True when an OAuth user hasn't yet provided their dateOfBirth.
+    // Used to redirect them to the onboarding page after first OAuth login.
+    // Set to false once they complete onboarding.
+    needsOnboarding: {
+      type: Boolean,
+      default: false,
+    },
+   
+    // ─── Avatar from OAuth Provider ───────────────────────────────────────────
+    // Stores the avatar URL the provider returns (Google/Facebook profile photo).
+    // Later overwritten when the user uploads their own photo.
+    oauthAvatarUrl: {
+      type: String,
+      default: null,
+    },
   },
+
   { timestamps: true }
 );
+
+// Add sparse unique indexes for OAuth provider IDs
+userSchema.index({ googleId: 1 },   { sparse: true, unique: true });
+userSchema.index({ facebookId: 1 }, { sparse: true, unique: true });
+userSchema.index({ twitterId: 1 },  { sparse: true, unique: true });
+userSchema.index({ appleId: 1 },    { sparse: true, unique: true });
 
 // ─────────────────────────────────────────────────────────────
 // Virtuals
