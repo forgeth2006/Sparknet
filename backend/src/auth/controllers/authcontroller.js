@@ -125,8 +125,8 @@ export const register = async (req, res) => {
     });
 
     try{
-    // Email verification token
-    const verifyToken = user.generateEmailVerificationToken();
+    //Email verification token
+     const verifyToken = user.generateEmailVerificationToken();
 
     if (resolvedRole === ROLES.CHILD) {
       const inviteToken = user.guardianInviteToken(guardianEmail);
@@ -197,7 +197,7 @@ export const login = async (req, res) => {
     if (user.status === ACCOUNT_STATUS.SUSPENDED) {
       return res.status(403).json({ success: false, message: 'Account suspended' });
     }
-    if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
+     if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
       return res.status(403).json({ success: false, message: 'Please verify your email first', code: 'EMAIL_NOT_VERIFIED' });
     }
     if (user.status === ACCOUNT_STATUS.PENDING_GUARDIAN_APPROVAL) {
