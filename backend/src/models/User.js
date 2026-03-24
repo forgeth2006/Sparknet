@@ -68,7 +68,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function () {
+        return this.authProvider === 'local';
+      },
       minlength: [8, 'Password must be at least 8 characters'],
       select: false,
     },
@@ -125,6 +127,12 @@ const userSchema = new mongoose.Schema(
     // If childLinks.length > 0 → guardian dashboard unlocked automatically.
     // ─────────────────────────────────────────────────────────
     childLinks: [childLinkSchema],
+    //this is for oauth users 
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'facebook', 'twitter', 'apple'],
+      default: 'local',
+    },
 
     // ─── Child fields (role = child side) ─────────────────────
     guardianId: {
