@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import User from '../../models/User.js';
+import User from '../../models/user.js';
 import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 import { validatePassword, validateAge, isMinor } from '../../utils/Validators.js';
 import {
