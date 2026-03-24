@@ -5,12 +5,18 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { apiLimiter } from './middleware/Ratelimiter.js';
 
+// 1. Initialize app FIRST
+const app = express();
+
+// 2. Import System Routes
 import authRoutes from './auth/routes/authroutes.js';
 import guardianRoutes from './guardian/routes/guardianroutes.js';
 import adminRoutes from './admin/routes/adminrouter.js';
 
-const app = express();
+// 3. Import Profile Routes (Path: src/auth/routes/profileRoutes.js)
+import profileRoutes from './auth/routes/profileRoutes.js';
 
+// Middleware Configuration
 app.use(helmet());
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
@@ -25,12 +31,14 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// 4. Route Middleware
 app.use('/api', apiLimiter);
-
 app.use('/api/auth', authRoutes);
-app.use('/api/guardian', guardianRoutes);   // replaces /api/parent
+app.use('/api/profiles', profileRoutes); // Profile system enabled here
+app.use('/api/guardian', guardianRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Health Check & Error Handling
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Server running', timestamp: new Date().toISOString() });
 });
@@ -41,14 +49,6 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map((e) => e.message);
-    return res.status(400).json({ success: false, message: 'Validation error', errors: messages });
-  }
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    return res.status(409).json({ success: false, message: `${field} is already in use` });
-  }
   res.status(err.statusCode || 500).json({ success: false, message: err.message || 'Internal server error' });
 });
 

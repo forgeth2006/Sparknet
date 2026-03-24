@@ -125,17 +125,17 @@ export const register = async (req, res) => {
     });
 
     // Email verification token
-    const verifyToken = user.generateEmailVerificationToken();
+    // const verifyToken = user.generateEmailVerificationToken();
 
-    if (resolvedRole === ROLES.CHILD) {
-      const inviteToken = user.generateGuardianInviteToken(guardianEmail);
-      await user.save({ validateBeforeSave: false });
-      await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
-    } else {
-      await user.save({ validateBeforeSave: false });
-    }
+    // if (resolvedRole === ROLES.CHILD) {
+    //   const inviteToken = user.generateGuardianInviteToken(guardianEmail);
+    //   await user.save({ validateBeforeSave: false });
+    //   await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
+    // } else {
+    //   await user.save({ validateBeforeSave: false });
+    // }
 
-    await sendVerificationEmail(email, verifyToken);
+    // await sendVerificationEmail(email, verifyToken);
 
     res.status(201).json({
       success: true,
@@ -192,9 +192,9 @@ export const login = async (req, res) => {
     if (user.status === ACCOUNT_STATUS.SUSPENDED) {
       return res.status(403).json({ success: false, message: 'Account suspended' });
     }
-    if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
-      return res.status(403).json({ success: false, message: 'Please verify your email first', code: 'EMAIL_NOT_VERIFIED' });
-    }
+    // if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
+    //   return res.status(403).json({ success: false, message: 'Please verify your email first', code: 'EMAIL_NOT_VERIFIED' });
+    // }
     if (user.status === ACCOUNT_STATUS.PENDING_GUARDIAN_APPROVAL) {
       return res.status(403).json({ success: false, message: 'Account awaiting guardian approval', code: 'PENDING_GUARDIAN_APPROVAL' });
     }
