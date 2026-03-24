@@ -1,12 +1,12 @@
 import crypto from 'crypto';
 import User from '../../models/User.js';
-import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
+import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/JWT.js';
 import { validatePassword, validateAge, isMinor } from '../../utils/Validators.js';
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendGuardianInviteEmail,
-} from '../../utils/Email.js';
+} from '../../utils/email.js';
 
 const { ROLES, MODES, ACCOUNT_STATUS } = User;
 
@@ -69,7 +69,7 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
 // @route   POST /api/auth/register
 // ─────────────────────────────────────────────────────────────
 export const register = async (req, res) => {
-  try {
+  try{
     const { username, email, password, dateOfBirth, guardianEmail, termsAccepted } = req.body;
 
     if (!username || !email || !password || !dateOfBirth) {
@@ -124,19 +124,20 @@ export const register = async (req, res) => {
       privacyAcceptedAt: new Date(),
     });
 
-    // Email verification token
-    // const verifyToken = user.generateEmailVerificationToken();
+    try{
+    //Email verification token
+     const verifyToken = user.generateEmailVerificationToken();
 
-    // if (resolvedRole === ROLES.CHILD) {
-    //   const inviteToken = user.generateGuardianInviteToken(guardianEmail);
-    //   await user.save({ validateBeforeSave: false });
-    //   await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
-    // } else {
-    //   await user.save({ validateBeforeSave: false });
-    // }
-
-    // await sendVerificationEmail(email, verifyToken);
-
+    if (resolvedRole === ROLES.CHILD) {
+      const inviteToken = user.generateGuardianInviteToken(guardianEmail);
+      await user.save({ validateBeforeSave: false });
+      await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
+    } else {
+      await user.save({ validateBeforeSave: false });
+    }
+  
+    await sendVerificationEmail(email, verifyToken);
+    
     res.status(201).json({
       success: true,
       message:
@@ -145,7 +146,11 @@ export const register = async (req, res) => {
           : 'Account created. Please check your email to verify.',
       role: resolvedRole,
     });
-  } catch (err) {
+    }
+    catch(e){
+      console.error(e);
+    }
+  }catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error during registration' });
   }
@@ -166,14 +171,14 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    /*if (user.isLocked) {
+    if (user.isLocked) {
       const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
       return res.status(423).json({
         success: false,
         message: `Account locked. Try again in ${minutesLeft} minute(s).`,
         code: 'ACCOUNT_LOCKED',
       });
-    }*/
+    }
 
     const isMatch = await user.comparePassword(password);
     const ip = getIp(req);
@@ -192,9 +197,9 @@ export const login = async (req, res) => {
     if (user.status === ACCOUNT_STATUS.SUSPENDED) {
       return res.status(403).json({ success: false, message: 'Account suspended' });
     }
-    // if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
-    //   return res.status(403).json({ success: false, message: 'Please verify your email first', code: 'EMAIL_NOT_VERIFIED' });
-    // }
+     if (user.status === ACCOUNT_STATUS.PENDING_VERIFICATION) {
+      return res.status(403).json({ success: false, message: 'Please verify your email first', code: 'EMAIL_NOT_VERIFIED' });
+    }
     if (user.status === ACCOUNT_STATUS.PENDING_GUARDIAN_APPROVAL) {
       return res.status(403).json({ success: false, message: 'Account awaiting guardian approval', code: 'PENDING_GUARDIAN_APPROVAL' });
     }
