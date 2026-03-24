@@ -8,7 +8,8 @@ import { apiLimiter } from './middleware/Ratelimiter.js';
 import authRoutes from './auth/routes/authroutes.js';
 import guardianRoutes from './guardian/routes/guardianroutes.js';
 import adminRoutes from './admin/routes/adminrouter.js';
-
+import  passport from '../src/auth/passport.js';               // ADDITION 1a
+import  oauthRoutes    from '../src/auth/routes/oauthroutes.js';  // ADDITION 1c
 const app = express();
 
 app.use(helmet());
@@ -26,9 +27,11 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 app.use('/api', apiLimiter);
-
+app.use(passport.initialize());   // ADDITION 1b: Initialize Passport middleware
 app.use('/api/auth', authRoutes);
+app
 app.use('/api/guardian', guardianRoutes);   // replaces /api/parent
+
 app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
