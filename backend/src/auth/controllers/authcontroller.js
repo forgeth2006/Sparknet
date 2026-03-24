@@ -6,7 +6,7 @@ import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendGuardianInviteEmail,
-} from '../../utils/email.js';
+} from '../../utils/Email.js';
 
 const { ROLES, MODES, ACCOUNT_STATUS } = User;
 
@@ -126,10 +126,10 @@ export const register = async (req, res) => {
 
     try{
     // Email verification token
-    const verifyToken = user.generateEmailVerificationToken();
+    const verifyToken = user.emailVerificationToken();
 
     if (resolvedRole === ROLES.CHILD) {
-      const inviteToken = user.generateGuardianInviteToken(guardianEmail);
+      const inviteToken = user.guardianInviteToken(guardianEmail);
       await user.save({ validateBeforeSave: false });
       await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
     } else {
@@ -171,14 +171,14 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    /*if (user.isLocked) {
+    if (user.isLocked) {
       const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
       return res.status(423).json({
         success: false,
         message: `Account locked. Try again in ${minutesLeft} minute(s).`,
         code: 'ACCOUNT_LOCKED',
       });
-    }*/
+    }
 
     const isMatch = await user.comparePassword(password);
     const ip = getIp(req);
@@ -204,7 +204,7 @@ export const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Account awaiting guardian approval', code: 'PENDING_GUARDIAN_APPROVAL' });
     }
 
-    await user.resetLoginAttempts();
+    await user.loginAttempts();
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
     user.loginHistory.push({ ip, device, success: true });
@@ -308,7 +308,7 @@ export const resendVerification = async (req, res) => {
     if (!user || user.isEmailVerified) {
       return res.json({ success: true, message: 'If that email exists and is unverified, a link was sent' });
     }
-    const token = user.generateEmailVerificationToken();
+    const token = user.emailVerificationToken();
     await user.save({ validateBeforeSave: false });
     await sendVerificationEmail(email, token);
     res.json({ success: true, message: 'Verification email sent' });
@@ -326,7 +326,7 @@ export const forgotPassword = async (req, res) => {
     res.json({ success: true, message: 'If that email exists, a reset link was sent' });
     const user = await User.findOne({ email });
     if (!user) return;
-    const token = user.generatePasswordResetToken();
+    const token = user.passwordResetToken();
     await user.save({ validateBeforeSave: false });
     await sendPasswordResetEmail(email, token);
   } catch (err) {
