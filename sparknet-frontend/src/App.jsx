@@ -1,3 +1,4 @@
+import OAuthErrorPage from './pages/auth/OAuthErrorPage';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -29,7 +30,7 @@ import { GuardianApprovePage } from './pages/guardian/GuardianApprovePage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminUserDetailPage } from './pages/admin/AdminUserDetailPage';
-
+import OnboardingPage from './pages/auth/onboarding';
 export default function App() {
   return (
     <AuthProvider>
@@ -42,7 +43,9 @@ export default function App() {
           <Route path="/reset-password/:token" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
           <Route path="/resend-verification" element={<ResendVerificationPage />} />
         </Route>
-
+        {/* ── OAuth Error Route ── */}
+        <Route path="/auth/error" element={<OAuthErrorPage />} />
+        <Route path='/Onboarding' element={<OnboardingPage/>}/>
         {/* ── Token-based routes (no layout) ── */}
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
         <Route path="/guardian/approve/:token" element={<GuardianApprovePage />} />
@@ -52,7 +55,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/change-password" element={<ChangePasswordPage />} />
-
+          
           {/* Guardian Routes */}
           <Route path="/guardian" element={<GuardianRoute><GuardianDashboard /></GuardianRoute>} />
           <Route path="/guardian/children/:childId/activity" element={<GuardianRoute><ChildActivityPage /></GuardianRoute>} />
