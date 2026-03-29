@@ -99,9 +99,16 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(MODES),
       default: MODES.NORMAL,
     },
-
+    googleId: {
+      type: String,
+      default: null
+    },
+    needsOnboarding: {
+      type: Boolean,
+      default: true,
+    },
     // ─── Age & Legal ───────────────────────────────────────────
-    dateOfBirth: { type: Date, required: true },
+    dateOfBirth: { type: Date, required:true},
     termsAcceptedAt: { type: Date },
     privacyAcceptedAt: { type: Date },
 
@@ -161,10 +168,7 @@ const userSchema = new mongoose.Schema(
         success: Boolean,
       },
     ],
-    googleId: {
-      type: String,
-      default: null
-    },
+   
     facebookId: {
       type: String,
       default: null
@@ -182,10 +186,7 @@ const userSchema = new mongoose.Schema(
     // True when an OAuth user hasn't yet provided their dateOfBirth.
     // Used to redirect them to the onboarding page after first OAuth login.
     // Set to false once they complete onboarding.
-    needsOnboarding: {
-      type: Boolean,
-      default: false,
-    },
+    
    
     // ─── Avatar from OAuth Provider ───────────────────────────────────────────
     // Stores the avatar URL the provider returns (Google/Facebook profile photo).
@@ -238,7 +239,7 @@ userSchema.virtual('linkedChildrenCount').get(function () {
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
-  this.password = await bcrypt.hash(this.password, rounds);
+  this.password = bcrypt.hash(this.password, rounds);
   next();
 });
 

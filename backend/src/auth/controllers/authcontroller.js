@@ -126,7 +126,7 @@ export const register = async (req, res) => {
 
     try{
     //Email verification token
-     const verifyToken = user.generateEmailVerificationToken();
+     const verifyToken = user.emailVerificationToken();
 
     if (resolvedRole === ROLES.CHILD) {
       const inviteToken = user.guardianInviteToken(guardianEmail);
@@ -204,7 +204,7 @@ export const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Account awaiting guardian approval', code: 'PENDING_GUARDIAN_APPROVAL' });
     }
 
-    await user.loginAttempts();
+    user.loginAttempts;
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
     user.loginHistory.push({ ip, device, success: true });

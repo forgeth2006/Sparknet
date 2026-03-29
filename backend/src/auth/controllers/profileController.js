@@ -2,7 +2,7 @@
 import Profile from '../../models/Profile.js';
 import PrivacySettings from '../../models/PrivacySettings.js';
 import ActivitySummary from '../../models/ActivitySummary.js';
-import User from '../../models/User.js';
+import User from '../../models/user.js';
 
 // Get Own Profile (Auto-creates if missing)
 export const getMyProfile = async (req, res) => {

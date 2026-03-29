@@ -7,13 +7,13 @@
 // NOTE: No serializeUser / deserializeUser needed because this project
 // uses JWT (stateless). Passport sessions are disabled in app.js.
 // ─────────────────────────────────────────────────────────────────────────────
-
 import passport from 'passport';
+import User from '../models/user.js'; // Adjust the path as needed to import your User model
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import AppleStrategy from 'passport-apple';
-import User from '../../models/user.js';
+
 
 const { ROLES, MODES, ACCOUNT_STATUS } = User;
 
@@ -128,15 +128,18 @@ const findOrCreateOAuthUser = async (opts) => {
 // Console: https://console.developers.google.com
 //
 // Callback URL to register in Google Console:
-//   Development:  http://localhost:5000/api/auth/google/callback
-//   Production:   https://yourdomain.com/api/auth/google/callback
+//   Development:  http://localhost:5000/api/oauth/google/callback
+//   Production:   https://yourdomain.com/api/oauth/google/callback
 // ─────────────────────────────────────────────────────────────────────────────
+console.log("Checking Callback URL:", `${process.env.OAUTH_CALLBACK_BASE_URL}/api/oauth/google/callback`);
+
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/auth/google/callback`,
+      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/oauth/google/callback`,
       scope: ['profile', 'email'],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -173,7 +176,7 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/auth/facebook/callback`,
+      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/oauth/facebook/callback`,
       profileFields: ['id', 'emails', 'name', 'displayName', 'photos'],
       scope: ['email'],
     },
@@ -217,7 +220,7 @@ passport.use(
     {
       consumerKey: process.env.TWITTER_CONSUMER_KEY,
       consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/auth/twitter/callback`,
+      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/oauth/twitter/callback`,
       includeEmail: true, // Only works if you have Elevated access + email permission
     },
     async (token, tokenSecret, profile, done) => {
@@ -263,7 +266,7 @@ passport.use(
       teamID: process.env.APPLE_TEAM_ID,               // 10-char Team ID from developer.apple.com
       keyID: process.env.APPLE_KEY_ID,                 // Key ID from your .p8 file
       privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH, // Path to .p8 file
-      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/auth/apple/callback`,
+      callbackURL: `${process.env.OAUTH_CALLBACK_BASE_URL}/api/oauth/apple/callback`,
       passReqToCallback: false,
       scope: ['name', 'email'],
     },
