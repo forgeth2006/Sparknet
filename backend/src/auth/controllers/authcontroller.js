@@ -126,16 +126,17 @@ export const register = async (req, res) => {
 
     try{
     //Email verification token
-     const verifyToken = user.emailVerificationToken();
-
+     const verifyToken = user.generateEmailVerificationToken()
+      //console.log(`Generated verification token for ${email}: ${verifyToken}`); // Log the token for testing
     if (resolvedRole === ROLES.CHILD) {
-      const inviteToken = user.guardianInviteToken(guardianEmail);
+      const inviteToken = user.generateGuardianInviteToken(guardianEmail);
       await user.save({ validateBeforeSave: false });
       await sendGuardianInviteEmail(guardianEmail, username, inviteToken);
     } else {
       await user.save({ validateBeforeSave: false });
     }
-  
+    user.emailVerificationToken = verifyToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
     await sendVerificationEmail(email, verifyToken);
     
     res.status(201).json({
@@ -204,7 +205,7 @@ export const login = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Account awaiting guardian approval', code: 'PENDING_GUARDIAN_APPROVAL' });
     }
 
-    user.loginAttempts;
+    user.loginAttempts+=1;
     user.lastLoginAt = new Date();
     user.lastLoginIp = ip;
     user.loginHistory.push({ ip, device, success: true });
@@ -308,7 +309,10 @@ export const resendVerification = async (req, res) => {
     if (!user || user.isEmailVerified) {
       return res.json({ success: true, message: 'If that email exists and is unverified, a link was sent' });
     }
-    const token = user.emailVerificationToken();
+    const token = user.generateEmailVerificationToken() ;
+    user.emailVerificationToken = token;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+     console.log(`token for reverification:${token}`)
     await user.save({ validateBeforeSave: false });
     await sendVerificationEmail(email, token);
     res.json({ success: true, message: 'Verification email sent' });
