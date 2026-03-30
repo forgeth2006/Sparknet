@@ -13,7 +13,7 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const { login, fetchMe } = useAuth();
+  const { login, fetchMe,user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
@@ -66,7 +66,7 @@ export const LoginPage = () => {
       // Your existing logic to load user data
       fetchMe().then(() => {
        
-          toast.success(`Welcome back, ${user.username}!`);
+          toast.success(`Welcome back, ${user}!`);
           navigate('/dashboard', { replace: true });
         
         
