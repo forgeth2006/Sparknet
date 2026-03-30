@@ -239,7 +239,7 @@ userSchema.virtual('linkedChildrenCount').get(function () {
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
-  this.password = bcrypt.hash(this.password, rounds);
+  this.password = await bcrypt.hash(this.password, rounds);
   next();
 });
 
