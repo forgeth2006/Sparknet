@@ -1,4 +1,4 @@
-import validator from 'validator';
+
 
 const validatePassword = (password) => {
   const errors = [];

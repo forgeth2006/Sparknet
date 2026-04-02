@@ -16,6 +16,9 @@ import adminRoutes from './admin/routes/adminrouter.js';
 
 // 3. Import Profile Routes (Path: src/auth/routes/profileRoutes.js)
 import profileRoutes from './auth/routes/profileRoutes.js';
+import  passport from '../src/auth/passport.js';               // ADDITION 1a
+import  oauthRoutes    from '../src/auth/routes/oauthroutes.js';  // ADDITION 1c
+const app = express();
 
 // Middleware Configuration
 app.use(helmet());
@@ -37,6 +40,11 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes); // Profile system enabled here
 app.use('/api/guardian', guardianRoutes);
+app.use(passport.initialize());   // ADDITION 1b: Initialize Passport middleware
+app.use('/api/auth', authRoutes);
+app.use('/api/oauth', oauthRoutes);  // ADDITION 1d: OAuth routes under /api/auth/oauth
+app.use('/api/guardian', guardianRoutes);   // replaces /api/parent
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 
