@@ -4,6 +4,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { apiLimiter } from './middleware/Ratelimiter.js';
+import contentRoutes from './content/routes/contentRoutes.js';
 
 // 1. Initialize app FIRST
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes); // Profile system enabled here
 app.use('/api/guardian', guardianRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/content', contentRoutes);
 
 // Health Check & Error Handling
 app.get('/api/health', (req, res) => {
