@@ -4,6 +4,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { apiLimiter } from './middleware/Ratelimiter.js';
+import contentRoutes from './content/routes/contentRoutes.js';
 
 // 1. Initialize app FIRST
 const app = express();
@@ -44,6 +45,7 @@ app.use("/api/oauth", oauthRoutes);  // ADDITION 1d: OAuth routes under /api/aut
 app.use('/api/guardian', guardianRoutes);   // replaces /api/parent
 
 app.use('/api/admin', adminRoutes);
+app.use('/api/content', contentRoutes);
 
 // Health Check & Error Handling
 app.get('/api/health', (req, res) => {
