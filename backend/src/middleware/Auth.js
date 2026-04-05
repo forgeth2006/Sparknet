@@ -134,6 +134,19 @@ const youthModeOnly = (req, res, next) => {
 };
 
 /**
+ * enforceYouthPrivacy — Intercept privacy setting updates and override for youth accounts.
+ */
+const enforceYouthPrivacy = (req, res, next) => {
+  if (req.user?.mode === MODES.YOUTH) {
+    // Force restrictive settings for youth mode
+    if (req.body.profileVisibility) req.body.profileVisibility = 'private';
+    if (req.body.allowMessaging !== undefined) req.body.allowMessaging = false;
+    if (req.body.showLocation !== undefined) req.body.showLocation = false;
+  }
+  next();
+};
+
+/**
  * requireEmailVerified — Block unverified users from sensitive actions.
  */
 const requireEmailVerified = (req, res, next) => {
@@ -184,4 +197,5 @@ export {
   requireEmailVerified,
   requireGuardianApproval,
   requireOwnerOrAdmin,
+  enforceYouthPrivacy,
 };

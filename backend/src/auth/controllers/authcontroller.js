@@ -1,5 +1,7 @@
 import crypto from 'crypto';
-import User from '../../models/user.js';
+import User from '../../models/User.js';
+import Profile from '../../models/Profile.js';
+import PrivacySettings from '../../models/PrivacySettings.js';
 import { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 import { validatePassword, validateAge, isMinor } from '../../utils/Validators.js';
 import {
@@ -138,6 +140,10 @@ export const register = async (req, res) => {
     user.emailVerificationToken = verifyToken;
     user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
     await sendVerificationEmail(email, verifyToken);
+    
+    // Auto-create blank Profile and PrivacySettings doc
+    await Profile.create({ user: user._id, displayName: user.username });
+    await PrivacySettings.create({ user: user._id });
     
     res.status(201).json({
       success: true,

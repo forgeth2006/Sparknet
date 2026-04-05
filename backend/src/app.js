@@ -22,6 +22,10 @@ import gamificationRoutes from './gamification/routes/gamificationRoutes.js';
 import moderationRoutes from './moderation/routes/moderationRoutes.js';
 import analyticsRoutes from './analytics/routes/analyticsRoutes.js';
 import notificationRoutes from './notifications/routes/notificationRoutes.js';
+import messagingRoutes from './messaging/routes/messagingRoutes.js';
+
+// Boot background event listeners
+import './notifications/services/notificationService.js';
 
 const app = express();
 
@@ -60,9 +64,11 @@ v1Router.use('/moderation', moderationRoutes);
 v1Router.use('/admin', adminRoutes);
 v1Router.use('/analytics', analyticsRoutes);
 v1Router.use('/notifications', notificationRoutes);
+v1Router.use('/messaging', messagingRoutes);
 
 // Mount V1 Namespace
 app.use('/api/v1', v1Router);
+app.use('/api/profile', profileRoutes);
 
 // Base Health Check
 app.get('/api/health', (req, res) => {

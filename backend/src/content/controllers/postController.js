@@ -1,201 +1,271 @@
+/**
+ * Post Controller  [SparkNet Content System — Step 1]
+ *
+ * Thin controller layer — only handles HTTP concerns (parse req, call service,
+ * send res). All business logic lives in the service layer.
+ *
+ * Routes handled:
+ *   POST   /api/v1/posts/create          → createPost
+ *   GET    /api/v1/posts/feed            → getFeed
+ *   GET    /api/v1/posts/:id             → getSinglePost
+ *   PUT    /api/v1/posts/:id             → editPost
+ *   DELETE /api/v1/posts/:id             → deletePost
+ *   GET    /api/v1/posts/user/:userId    → getUserPosts
+ */
+
 import Post from '../../models/Post.js';
 import User from '../../models/User.js';
-
 import { analyzeContent, applyTrustPenalty } from '../../moderation/services/moderationService.js';
+import { buildFeed, getUserPostsFeed } from '../services/feedService.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE POST
+// POST /api/v1/posts/create
+// ─────────────────────────────────────────────────────────────────────────────
 export const createPost = async (req, res) => {
   try {
     const { content_text, media_url, visibility, tags } = req.body;
-    const userId = req.user.id; // From your Auth middleware
+    const userId   = req.user._id;
     const userRole = req.user.role;
 
-    // 1. AI Content Moderation [SRS 5.5]
-    const moderationResult = await analyzeContent(content_text);
-    const risk_score = moderationResult.riskScore;
-    const is_flagged = moderationResult.isFlagged;
-    
-    // Apply trust penalty if flagged [SRS 5.1 Account Trust Score]
-    if (is_flagged) {
-      const user = await User.findById(userId);
-      if (user) {
-        user.trustScore = applyTrustPenalty(user.trustScore || 100, risk_score);
-        await user.save();
-      }
+    // ── 1. Validate required fields ────────────────────────────────────────
+    if (!content_text?.trim()) {
+      return res.status(400).json({ success: false, message: 'Post content is required' });
     }
 
-    // Universal blocking for high-risk content
-    if (risk_score >= 0.8) {
-      return res.status(403).json({ 
-        message: "Post blocked: Violates safety guidelines." 
+    // ── 2. Content Moderation pipeline ────────────────────────────────────
+    const moderation  = await analyzeContent(content_text);
+    const risk_score  = moderation.riskScore;
+    const is_flagged  = moderation.isFlagged;
+
+    // Apply trust penalty to author if content was flagged
+    if (is_flagged) {
+      await User.findByIdAndUpdate(userId, {
+        $inc: { trustScore: -applyTrustPenalty(0, risk_score) },
       });
     }
 
-    // 2. Youth Safety Enforcement [SRS 5.5.3]
-    let finalVisibility = visibility;
+    // Block high-risk content for ALL users
+    if (risk_score >= 0.8) {
+      return res.status(403).json({
+        success: false,
+        message: 'Post blocked: content violates safety guidelines.',
+        code: 'HIGH_RISK_CONTENT',
+      });
+    }
+
+    // ── 3. Youth Safety enforcement ────────────────────────────────────────
+    let finalVisibility = visibility || 'public';
     if (userRole === 'child') {
-      // Force restriction for youth accounts [cite: 379, 504]
-      finalVisibility = 'followers'; 
-      
-      // Strict blocking for medium-risk youth content
+      finalVisibility = 'followers';       // youth posts always followers-only
       if (risk_score >= 0.5) {
-        return res.status(403).json({ 
-          message: "Post blocked: Content does not meet youth safety guidelines." 
+        return res.status(403).json({
+          success: false,
+          message: 'Post blocked: does not meet youth safety guidelines.',
+          code: 'YOUTH_SAFETY_VIOLATION',
         });
       }
     }
 
-    // 3. Create the Post [cite: 132]
-    const newPost = new Post({
+    // ── 4. Validate visibility enum ────────────────────────────────────────
+    if (!['public', 'followers', 'private'].includes(finalVisibility)) {
+      finalVisibility = 'public';
+    }
+
+    // ── 5. Create & save post ──────────────────────────────────────────────
+    const newPost = await Post.create({
       user: userId,
-      content_text,
-      media_url,
-      tags,
-      visibility: finalVisibility,
+      content_text: content_text.trim(),
+      media_url:    media_url || null,
+      tags:         Array.isArray(tags) ? tags : [],
+      visibility:   finalVisibility,
       risk_score,
-      is_flagged
+      is_flagged,
+      moderation_remark: moderation.remark || null,
     });
 
-    await newPost.save();
+    // Populate user for response
+    await newPost.populate('user', 'username oauthAvatarUrl role');
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: is_flagged ? "Post submitted and flagged for review" : "Post created successfully",
-      post: newPost
+      message: is_flagged
+        ? 'Post submitted and queued for moderation review'
+        : 'Post created successfully',
+      post: newPost,
     });
 
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error('[createPost]', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET FEED  (ranked, paginated)
+// GET /api/v1/posts/feed?page=1&limit=20
+// ─────────────────────────────────────────────────────────────────────────────
 export const getFeed = async (req, res) => {
   try {
-    const userRole = req.user.role;
-    let query = { is_flagged: false };
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
 
-    // Youth Feed Special Logic: Only show safe/educational content [cite: 549, 552]
-    if (userRole === 'child') {
-      query.risk_score = { $lt: 0.3 }; // Strict safety threshold [cite: 342]
-    }
+    const { posts, pagination } = await buildFeed({
+      userId:   req.user._id.toString(),
+      userRole: req.user.role,
+      userInterests: req.user.interests || [],
+      page,
+      limit,
+    });
 
-    const posts = await Post.find(query)
-      .populate('user', 'username avatar role')
-      .sort({ createdAt: -1 }) // Recency ranking [cite: 539]
-      .limit(20);
-
-    res.status(200).json(posts);
+    return res.status(200).json({
+      success: true,
+      pagination,
+      posts,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching feed", error: error.message });
+    console.error('[getFeed]', error);
+    return res.status(500).json({ success: false, message: 'Error fetching feed', error: error.message });
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET SINGLE POST
+// GET /api/v1/posts/:id
+// ─────────────────────────────────────────────────────────────────────────────
+export const getSinglePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate('user', 'username oauthAvatarUrl role trustScore');
+
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    // Visibility access check
+    const isOwner = post.user._id.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (post.visibility === 'private' && !isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Youth users cannot view flagged content
+    if (req.user.role === 'child' && post.is_flagged) {
+      return res.status(403).json({ success: false, message: 'Content not available' });
+    }
+
+    return res.status(200).json({ success: true, post });
+  } catch (error) {
+    console.error('[getSinglePost]', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT POST
+// PUT /api/v1/posts/:id
+// ─────────────────────────────────────────────────────────────────────────────
 export const editPost = async (req, res) => {
   try {
-    const { id } = req.params;
     const { content_text, tags, visibility } = req.body;
-    const userId = req.user.id;
+    const post = await Post.findById(req.params.id);
 
-    let post = await Post.findById(id);
     if (!post) {
-      return res.status(404).json({ message: "Post not found" });
+      return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
-    if (post.user.toString() !== userId) {
-      return res.status(403).json({ message: "Unauthorized to edit this post" });
+    // Only owner or admin can edit
+    const isOwner = post.user.toString() === req.user._id.toString();
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to edit this post' });
     }
 
-    if (content_text) post.content_text = content_text;
-    if (tags) post.tags = tags;
-    if (visibility && req.user.role !== 'child') {
-      post.visibility = visibility;
-    }
+    // Re-moderate if content changed
+    if (content_text?.trim()) {
+      const moderation = await analyzeContent(content_text);
+      post.risk_score        = moderation.riskScore;
+      post.is_flagged        = moderation.isFlagged;
+      post.moderation_remark = moderation.remark || null;
+      post.content_text      = content_text.trim();
 
-    // Moderation on Edit
-    if (content_text) {
-      const moderationResult = await analyzeContent(content_text);
-      post.risk_score = moderationResult.riskScore;
-      post.is_flagged = moderationResult.isFlagged;
-      
-      if (post.is_flagged) {
-        const user = await User.findById(userId);
-        if (user) {
-          user.trustScore = applyTrustPenalty(user.trustScore || 100, post.risk_score);
-          await user.save();
-        }
-      }
-
-      if (post.risk_score >= 0.8 || (req.user.role === 'child' && post.risk_score >= 0.5)) {
-        return res.status(403).json({ 
-          message: "Edit blocked: Content violates safety guidelines." 
+      // Block if violates safety after edit
+      const youthBlock = req.user.role === 'child' && moderation.riskScore >= 0.5;
+      if (moderation.riskScore >= 0.8 || youthBlock) {
+        return res.status(403).json({
+          success: false,
+          message: 'Edit blocked: updated content violates safety guidelines.',
+          code: 'EDIT_CONTENT_VIOLATION',
         });
+      }
+    }
+
+    if (tags !== undefined)     post.tags = Array.isArray(tags) ? tags : [];
+    // Youth users cannot change their visibility setting
+    if (visibility && req.user.role !== 'child') {
+      if (['public', 'followers', 'private'].includes(visibility)) {
+        post.visibility = visibility;
       }
     }
 
     await post.save();
+    await post.populate('user', 'username oauthAvatarUrl role');
 
-    res.status(200).json({ success: true, post });
+    return res.status(200).json({ success: true, post });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error('[editPost]', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE POST
+// DELETE /api/v1/posts/:id
+// ─────────────────────────────────────────────────────────────────────────────
 export const deletePost = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const post = await Post.findById(req.params.id);
 
-    const post = await Post.findById(id);
     if (!post) {
-      return res.status(404).json({ message: "Post not found" });
+      return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
-    if (post.user.toString() !== userId && userRole !== 'admin') {
-      return res.status(403).json({ message: "Unauthorized to delete this post" });
+    const isOwner = post.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this post' });
     }
 
-    await Post.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Post deleted successfully" });
+    await Post.findByIdAndDelete(req.params.id);
+
+    return res.status(200).json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error('[deletePost]', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
 
-export const getSinglePost = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const post = await Post.findById(id).populate('user', 'username avatar role');
-
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    if (post.visibility === 'private' && (!req.user || post.user._id.toString() !== req.user.id)) {
-        return res.status(403).json({ message: "Access denied" });
-    }
-
-    res.status(200).json({ success: true, post });
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-};
-
+// ─────────────────────────────────────────────────────────────────────────────
+// GET USER POSTS  (profile page feed)
+// GET /api/v1/posts/user/:userId?page=1&limit=20
+// ─────────────────────────────────────────────────────────────────────────────
 export const getUserPosts = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUserId = req.user ? req.user.id : null;
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
 
-    let query = { user: userId };
+    const { posts, pagination } = await getUserPostsFeed({
+      targetUserId: req.params.userId,
+      viewerUserId: req.user?._id?.toString(),
+      viewerRole:   req.user?.role,
+      page,
+      limit,
+    });
 
-    if (currentUserId !== userId) {
-        query.visibility = 'public'; // Check followers in complete version
-    }
-
-    const posts = await Post.find(query)
-      .sort({ createdAt: -1 })
-      .populate('user', 'username avatar role');
-
-    res.status(200).json({ success: true, posts });
+    return res.status(200).json({ success: true, pagination, posts });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error('[getUserPosts]', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
-};
+};

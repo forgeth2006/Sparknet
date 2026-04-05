@@ -8,6 +8,12 @@ import {
   resetProfile 
 } from '../../auth/controllers/profileController.js';
 
+import { 
+  followUser, 
+  unfollowUser, 
+  getFollowers 
+} from '../controllers/connectionController.js';
+
 import { protect } from '../../middleware/Auth.js';
 import { uploadAvatar } from '../../utils/upload.js';
 
@@ -23,6 +29,11 @@ router.put('/privacy', updatePrivacy); // PUT /api/v1/users/privacy
 
 // Extras
 router.get('/activity', getActivity);
+
+// Connections (Follows) for Youth Safety logic
+router.post('/follow', followUser);
+router.delete('/follow/:targetId', unfollowUser);
+router.get('/:targetId/followers', getFollowers);
 router.delete('/reset', resetProfile);
 router.get('/:username', getPublicProfile);
 

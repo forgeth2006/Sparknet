@@ -8,7 +8,7 @@
 // uses JWT (stateless). Passport sessions are disabled in app.js.
 // ─────────────────────────────────────────────────────────────────────────────
 import passport from 'passport';
-import User from '../models/user.js'; // Adjust the path as needed to import your User model
+import User from '../models/User.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as TwitterStrategy } from 'passport-twitter';

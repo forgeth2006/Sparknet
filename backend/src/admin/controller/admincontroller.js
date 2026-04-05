@@ -1,4 +1,7 @@
-import User from '../../models/user.js';
+import User from '../../models/User.js';
+import Report from '../../models/Report.js';
+import Post from '../../models/Post.js';
+import Comment from '../../models/Comment.js';
 import { sendAccountStatusEmail } from '../../utils/Email.js';
 
 const { ACCOUNT_STATUS, ROLES, MODES } = User;
@@ -190,6 +193,86 @@ export const getStats = async (req, res) => {
         youthModeUsers: await User.countDocuments({ mode: MODES.YOUTH }),
       },
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// @route   GET /api/admin/reports
+// @desc    Fetch content reports from the community
+// ─────────────────────────────────────────────────────────────
+export const getReports = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const reports = await Report.find()
+      .populate('reporter_id', 'username email')
+      .sort({ status: 1, createdAt: -1 }) // pending first, then newest
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await Report.countDocuments();
+
+    // Populate target data dynamically depending on whether it's a post or comment
+    const populatedReports = await Promise.all(reports.map(async (report) => {
+      let targetDoc = null;
+      if (report.type === 'post') {
+        targetDoc = await Post.findById(report.target_id).populate('user', 'username email').lean();
+      } else if (report.type === 'comment') {
+        targetDoc = await Comment.findById(report.target_id).populate('user', 'username email').lean();
+      }
+      return { ...report, target: targetDoc };
+    }));
+
+    res.json({
+      success: true,
+      page,
+      pages: Math.ceil(total / limit),
+      total,
+      reports: populatedReports
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// @route   PATCH /api/admin/reports/:id/resolve
+// @desc    Resolve a community report
+// ─────────────────────────────────────────────────────────────
+export const resolveReport = async (req, res) => {
+  try {
+    const reportId = req.params.id;
+    const { action } = req.body; // 'dismiss', 'ban_content', 'ban_user'
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    if (action === 'dismiss') {
+      report.status = 'resolved';
+      await report.save();
+      return res.json({ success: true, message: 'Report dismissed successfully' });
+    }
+
+    // Advanced actions: ban content
+    if (action === 'ban_content') {
+      if (report.type === 'post') {
+        await Post.findByIdAndUpdate(report.target_id, { visibility: 'private', is_flagged: true, moderation_remark: 'Banned by admin via report' });
+      } else if (report.type === 'comment') {
+        await Comment.findByIdAndDelete(report.target_id);
+      }
+      report.status = 'resolved';
+      await report.save();
+      return res.json({ success: true, message: 'Content banned/removed successfully' });
+    }
+
+    return res.status(400).json({ success: false, message: 'Invalid action' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

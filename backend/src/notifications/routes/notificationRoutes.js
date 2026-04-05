@@ -1,18 +1,21 @@
 import express from 'express';
 import { protect } from '../../middleware/Auth.js';
-import Notification from '../../models/Notification.js';
+import { 
+  getNotifications, 
+  markAsRead, 
+  markAllAsRead,
+  deleteNotification,
+  getUnreadCount
+} from '../controllers/notificationController.js';
 
 const router = express.Router();
+
 router.use(protect);
 
-router.get('/', async (req, res) => {
-  const notifications = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 });
-  res.json({ success: true, count: notifications.length, data: notifications });
-});
-
-router.put('/read', async (req, res) => {
-  await Notification.updateMany({ user: req.user._id, isRead: false }, { isRead: true });
-  res.json({ success: true, message: 'Notifications marked as read' });
-});
+router.get('/', getNotifications);
+router.get('/unread-count', getUnreadCount);
+router.patch('/:id/read', markAsRead);
+router.post('/read-all', markAllAsRead);
+router.delete('/:id', deleteNotification);
 
 export default router;

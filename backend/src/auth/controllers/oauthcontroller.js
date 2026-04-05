@@ -7,7 +7,7 @@
 //   const message = req.query.message || 'Unknown error';
 //   res.status(400).json({ success: false, message });
 // };
-import User from '../../models/user.js';
+import User from '../../models/User.js';
 
 import  { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 

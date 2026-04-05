@@ -1,17 +1,25 @@
 import express from 'express';
-import { protect } from '../../middleware/Auth.js';
+import { protect, adminOnly } from '../../middleware/Auth.js';
+import { checkContent, getModerationQueue, resolveFlaggedPost } from '../controllers/moderationController.js';
 
 const router = express.Router();
 
-// Used internally or by users reporting
+// ─────────────────────────────────────────────────────────────────────────────
+// USER ROUTES
+// ─────────────────────────────────────────────────────────────────────────────
 router.use(protect);
 
-router.post('/check', async (req, res) => {
-  res.json({ success: true, safe: true, riskScore: 'Low' });
-});
+// Pre-flight check for content before posting
+router.post('/check', checkContent);
 
-router.post('/report', async (req, res) => {
-  res.json({ success: true, message: 'Content reported successfully' });
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN ROUTES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// View moderation queue (flagged posts)
+router.get('/queue', adminOnly, getModerationQueue);
+
+// Resolve a flagged post
+router.patch('/:postId/resolve', adminOnly, resolveFlaggedPost);
 
 export default router;

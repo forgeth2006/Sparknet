@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import User from '../../models/user.js';
+import User from '../../models/User.js';
 import { sendGuardianInviteEmail, sendAccountStatusEmail } from '../../utils/Email.js';
 
 const { ROLES, ACCOUNT_STATUS } = User;

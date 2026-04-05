@@ -124,6 +124,28 @@ const userSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    interests: [{
+      type: String,
+      trim: true,
+      lowercase: true
+    }],
+    
+    // ─── Gamification ──────────────────────────────────────────
+    points: {
+      type: Number,
+      default: 0
+    },
+    badges: [{
+      type: String
+    }],
+
+    // ─── Notification Preferences ──────────────────────────────
+    notificationPreferences: {
+      likes: { type: Boolean, default: true },
+      comments: { type: Boolean, default: true },
+      messages: { type: Boolean, default: true },
+      system: { type: Boolean, default: true }
+    },
 
     // ─── Email Verification ────────────────────────────────────
     isEmailVerified: { type: Boolean, default: false },
