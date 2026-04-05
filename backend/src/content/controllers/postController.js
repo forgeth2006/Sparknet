@@ -1,31 +1,42 @@
 import Post from '../../models/Post.js';
 import User from '../../models/User.js';
 
-// Simple Keyword Filter for Phase 1 Moderation [cite: 494]
-const BANNED_WORDS = ['violence', 'spam', 'hate', 'badword123']; 
-
+import { analyzeContent, applyTrustPenalty } from '../../moderation/services/moderationService.js';
 export const createPost = async (req, res) => {
   try {
     const { content_text, media_url, visibility, tags } = req.body;
     const userId = req.user.id; // From your Auth middleware
     const userRole = req.user.role;
 
-    // 1. Basic Content Moderation [cite: 487, 495]
-    const containsBanned = BANNED_WORDS.some(word => 
-      content_text.toLowerCase().includes(word)
-    );
+    // 1. AI Content Moderation [SRS 5.5]
+    const moderationResult = await analyzeContent(content_text);
+    const risk_score = moderationResult.riskScore;
+    const is_flagged = moderationResult.isFlagged;
+    
+    // Apply trust penalty if flagged [SRS 5.1 Account Trust Score]
+    if (is_flagged) {
+      const user = await User.findById(userId);
+      if (user) {
+        user.trustScore = applyTrustPenalty(user.trustScore || 100, risk_score);
+        await user.save();
+      }
+    }
 
-    let risk_score = containsBanned ? 0.8 : 0.1; // High risk if banned words found [cite: 489]
-    let is_flagged = containsBanned;
+    // Universal blocking for high-risk content
+    if (risk_score >= 0.8) {
+      return res.status(403).json({ 
+        message: "Post blocked: Violates safety guidelines." 
+      });
+    }
 
-    // 2. Youth Safety Enforcement [cite: 501, 507]
+    // 2. Youth Safety Enforcement [SRS 5.5.3]
     let finalVisibility = visibility;
     if (userRole === 'child') {
       // Force restriction for youth accounts [cite: 379, 504]
       finalVisibility = 'followers'; 
       
-      // Strict blocking for high-risk youth content [cite: 555]
-      if (risk_score > 0.5) {
+      // Strict blocking for medium-risk youth content
+      if (risk_score >= 0.5) {
         return res.status(403).json({ 
           message: "Post blocked: Content does not meet youth safety guidelines." 
         });
@@ -98,11 +109,26 @@ export const editPost = async (req, res) => {
       post.visibility = visibility;
     }
 
-    const containsBanned = BANNED_WORDS.some(word => 
-      post.content_text && post.content_text.toLowerCase().includes(word)
-    );
-    post.risk_score = containsBanned ? 0.8 : 0.1;
-    post.is_flagged = containsBanned;
+    // Moderation on Edit
+    if (content_text) {
+      const moderationResult = await analyzeContent(content_text);
+      post.risk_score = moderationResult.riskScore;
+      post.is_flagged = moderationResult.isFlagged;
+      
+      if (post.is_flagged) {
+        const user = await User.findById(userId);
+        if (user) {
+          user.trustScore = applyTrustPenalty(user.trustScore || 100, post.risk_score);
+          await user.save();
+        }
+      }
+
+      if (post.risk_score >= 0.8 || (req.user.role === 'child' && post.risk_score >= 0.5)) {
+        return res.status(403).json({ 
+          message: "Edit blocked: Content violates safety guidelines." 
+        });
+      }
+    }
 
     await post.save();
 

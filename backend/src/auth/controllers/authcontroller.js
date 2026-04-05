@@ -270,11 +270,13 @@ export const logoutAll = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// @route   GET /api/auth/verify-email/:token
+// @route   POST /api/auth/verify-email
 // ─────────────────────────────────────────────────────────────
 export const verifyEmail = async (req, res) => {
   try {
-    const hashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const { verification_token } = req.body;
+    if (!verification_token) return res.status(400).json({ success: false, message: 'Verification token required' });
+    const hashed = crypto.createHash('sha256').update(verification_token).digest('hex');
     const user = await User.findOne({
       emailVerificationToken: hashed,
       emailVerificationExpires: { $gt: Date.now() },
@@ -335,12 +337,13 @@ export const forgotPassword = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// @route   POST /api/auth/reset-password/:token
+// @route   POST /api/auth/reset-password
 // ─────────────────────────────────────────────────────────────
 export const resetPassword = async (req, res) => {
   try {
-    const { password } = req.body;
-    const hashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const { password, reset_token } = req.body;
+    if (!reset_token) return res.status(400).json({ success: false, message: 'Reset token required' });
+    const hashed = crypto.createHash('sha256').update(reset_token).digest('hex');
     const user = await User.findOne({
       passwordResetToken: hashed,
       passwordResetExpires: { $gt: Date.now() },

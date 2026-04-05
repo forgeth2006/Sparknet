@@ -111,6 +111,12 @@ const userSchema = new mongoose.Schema(
       enum: Object.values(ACCOUNT_STATUS),
       default: ACCOUNT_STATUS.PENDING_VERIFICATION,
     },
+    trustScore: {
+      type: Number,
+      default: 100, // 0 to 100
+      min: 0,
+      max: 100,
+    },
 
     // ─── Email Verification ────────────────────────────────────
     isEmailVerified: { type: Boolean, default: false },
