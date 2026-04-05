@@ -1,22 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
-
 :root {
-  --color-primary: #0040a1;
-  --color-secondary: #1b6d24;
-  --color-tertiary: #004f5a;
+  --color-primary: #6366F1; /* Electric Indigo */
+  --color-secondary: #10B981; /* Cyber Green */
+  --color-tertiary: #A855F7; /* Neon Purple */
   
-  --bg-layer-0: #faf8ff;
-  --bg-layer-1: #f0edf7;
-  --bg-layer-2: #ffffff;
-  --bg-layer-glass: rgba(255, 255, 255, 0.8);
+  --bg-layer-0: #0B0F19; /* Deep Void */
+  --bg-layer-1: #131B2C;
+  --bg-layer-2: #1E293B; /* Card Surfaces */
+  --bg-layer-glass: rgba(19, 27, 44, 0.8);
   
-  --text-on-surface: #191b22;
-  --text-muted: #5e616f;
-  --text-inverse: #ffffff;
+  --text-on-surface: #F8FAFC;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
 }
 
 @layer base {
@@ -37,7 +37,6 @@
   h2 { font-size: 2.25rem; font-weight: 700; }
 
   /* OVERWRITING LEGACY THEME HARDCODED UTILITIES */
-  /* Remove lines/borders forcefully to enforce the "No-Line" Rule */
   .border, .border-t, .border-b, .border-l, .border-r,
   .border-dark-500, .border-gray-700, hr {
     border-color: transparent !important;
@@ -48,7 +47,7 @@
   .bg-dark-900, .bg-dark-800, .bg-dark-700 {
     background-color: transparent !important;
   }
-  .bg-[#0a0a0f], .bg-[#111118] { background-color: var(--bg-layer-0) !important; }
+  .bg-[#0a0a0f], .bg-[#111118], .bg-white { background-color: var(--bg-layer-0) !important; }
 }
 
 @layer components {
@@ -56,28 +55,26 @@
   .spark-card {
     @apply rounded-3xl p-6 transition-all duration-300;
     background-color: var(--bg-layer-2) !important;
-    /* Tonal Layering / Ambient Shadows - 32px blur at 6% matching on_surface (#191b22) */
-    box-shadow: 0px 8px 32px rgba(25, 27, 34, 0.06) !important;
+    /* Richer shadow for dark mode */
+    box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.3) !important;
     border: none !important;
   }
   
-  /* Background logic for sections if explicitly used */
   .spark-surface-low {
     background-color: var(--bg-layer-1);
     border-radius: 1.5rem;
   }
 
-  /* Glassmorphism container */
   .spark-glass {
     background-color: var(--bg-layer-glass);
     backdrop-filter: blur(20px);
-    box-shadow: 0 10px 40px rgba(25, 27, 34, 0.06);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   }
 
   /* ─── Inputs ─── */
   .spark-input {
     @apply w-full rounded-2xl px-5 py-4;
-    background-color: #eceaf3 !important; /* surface_container_highest */
+    background-color: #151d30 !important; /* Slightly distinct from layer 1 */
     color: var(--text-on-surface) !important;
     border: 2px solid transparent !important;
     outline: none !important;
@@ -90,16 +87,16 @@
   }
   .spark-input:focus {
     background-color: var(--bg-layer-2) !important;
-    /* Ghost border fallback: outline_variant token at 40% (as requested for input) */
-    border: 2px solid rgba(0, 64, 161, 0.4) !important; 
-    box-shadow: 0 4px 12px rgba(0, 64, 161, 0.05) !important;
+    /* Primary color ghost border */
+    border: 2px solid rgba(99, 102, 241, 0.5) !important; 
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1) !important;
   }
 
   /* ─── Buttons ─── */
   .spark-btn {
     @apply inline-flex items-center justify-center gap-3 px-8 py-3.5 
            font-semibold text-sm tracking-wide transition-all duration-300 cursor-pointer;
-    border-radius: 9999px !important; /* Pill shaped */
+    border-radius: 9999px !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     border: none !important;
   }
@@ -107,22 +104,21 @@
   .spark-btn-primary {
     @apply spark-btn;
     color: var(--text-inverse) !important;
-    background: linear-gradient(135deg, var(--color-primary), #005ce6) !important;
-    /* Subtle 0.5px white 10% inner glow on top edge */
-    box-shadow: inset 0 1px 0px rgba(255,255,255,0.15), 0 8px 20px rgba(0, 64, 161, 0.15) !important;
+    background: linear-gradient(135deg, var(--color-primary), #4F46E5) !important;
+    box-shadow: inset 0 1px 0px rgba(255,255,255,0.15), 0 8px 24px rgba(99, 102, 241, 0.2) !important;
   }
   .spark-btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: inset 0 1px 0px rgba(255,255,255,0.25), 0 12px 24px rgba(0, 64, 161, 0.25) !important;
+    box-shadow: inset 0 1px 0px rgba(255,255,255,0.25), 0 12px 28px rgba(99, 102, 241, 0.35) !important;
   }
   
   .spark-btn-secondary {
     @apply spark-btn;
-    background-color: #e5f3e7 !important; /* Secondary Container */
+    background-color: rgba(16, 185, 129, 0.15) !important; 
     color: var(--color-secondary) !important;
   }
   .spark-btn-secondary:hover {
-    background-color: #d1ead5 !important;
+    background-color: rgba(16, 185, 129, 0.25) !important;
   }
 
   .spark-btn-ghost {
@@ -130,22 +126,21 @@
     color: var(--color-primary) !important;
   }
   .spark-btn-ghost:hover {
-    background-color: rgba(0, 64, 161, 0.06) !important;
+    background-color: rgba(99, 102, 241, 0.1) !important;
   }
 
   .spark-btn-danger {
-    @apply spark-btn bg-red-50 text-red-600;
+    @apply spark-btn bg-red-900/40 text-red-400;
   }
   .spark-btn-danger:hover {
-    background-color: #fee2e2;
+    background-color: rgba(220, 38, 38, 0.3) !important;
   }
 
   /* ─── Badges & Shields ─── */
-  /* Family Control indicator shield */
   .spark-shield {
     @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-bold tracking-wider;
     border-radius: 9999px !important;
-    background-color: #e0f2f5 !important;
+    background-color: rgba(168, 85, 247, 0.15) !important; /* Neon purple */
     color: var(--color-tertiary) !important;
   }
 
@@ -158,21 +153,20 @@
   .spark-badge {
     @apply inline-flex items-center px-3 py-1 font-medium text-xs;
     border-radius: 9999px !important;
-    background-color: rgba(0, 64, 161, 0.08) !important;
-    color: var(--color-primary) !important;
+    background-color: rgba(99, 102, 241, 0.15) !important;
+    color: #818CF8 !important; /* Lighter indigo for badge */
   }
   
-  /* Fallback glow line */
   .glow-line {
     @apply h-px w-full;
     background: transparent !important; 
   }
 }
 
-/* Scrollbar Light Theme */
+/* Scrollbar Dark Theme */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #dcdcea; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
 
 /* Animations */
