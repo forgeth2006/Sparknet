@@ -1,4 +1,4 @@
-import User from '../../models/User.js';
+import User from '../../models/user.js';
 import { sendAccountStatusEmail } from '../../utils/Email.js';
 
 const { ACCOUNT_STATUS, ROLES, MODES } = User;

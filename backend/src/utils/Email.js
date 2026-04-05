@@ -20,7 +20,8 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 const sendVerificationEmail = async (email, token) => {
-  const url = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+  const url = `${process.env.CLIENT_URL}/verify-email/${token}`;
+  console.log(`Verification URL for ${email}: ${url}`); // Log the URL for testing
   await sendEmail({
     to: email,
     subject: 'Verify your email address',

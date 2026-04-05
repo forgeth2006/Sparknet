@@ -15,7 +15,12 @@ import  {
   completeOnboarding,
   getLinkedProviders,
   unlinkProvider,
+  // oauthErrorApi,
 } from '../../auth/controllers/oauthcontroller.js'
+// ─────────────────────────────────────────────────────────────────────────────
+// OAuth error API endpoint for frontend
+// ─────────────────────────────────────────────────────────────────────────────
+// router.get('/oauth/error', oauthErrorApi);
 import  { protect } from '../../middleware/Auth.js'
 
 // ─── Passport authenticate options ───────────────────────────────────────────
@@ -52,8 +57,8 @@ router.get('/google/failure', handleOAuthFailure);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FACEBOOK
-// Step 1: GET /api/auth/facebook
-// Step 2: GET /api/auth/facebook/callback
+// Step 1: GET /api/oauth/facebook
+// Step 2: GET /api/oauth/facebook/callback
 // ─────────────────────────────────────────────────────────────────────────────
 router.get(
   '/facebook',
@@ -118,13 +123,13 @@ router.get('/apple/failure', handleOAuthFailure);
 
 // Complete onboarding for new OAuth users (collect DOB + accept terms)
 // Called after the first OAuth login redirects to /auth/onboarding
-router.post('/oauth/complete-onboarding', protect, completeOnboarding);
+router.patch('/complete-onboarding', protect, completeOnboarding);
 
 // Get which OAuth providers are linked to the current account
-router.get('/oauth/linked-providers', protect, getLinkedProviders);
+router.get('/linked-providers', protect, getLinkedProviders);
 
 // Unlink a provider from the current account
 // e.g. DELETE /api/auth/oauth/unlink/google
-router.delete('/oauth/unlink/:provider', protect, unlinkProvider);
+router.delete('/unlink/:provider', protect, unlinkProvider);
 
 export default router;

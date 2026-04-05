@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useGoogleLogin } from '@react-oauth/google';
+import OnboardingPage from './onboarding';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/common/Input';
 import { Spinner } from '../../components/common/Spinner';
@@ -13,7 +13,7 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const { login, fetchMe } = useAuth();
+  const { login, fetchMe,user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
@@ -42,25 +42,37 @@ export const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      try {
-        const { data } = await api.post('/auth/google', {
-          access_token: tokenResponse.access_token,
-        });
-        if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
-        await fetchMe();
-        toast.success(`Welcome, ${data.user.username}!`);
-        navigate(data.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
-      } catch (err) {
-        toast.error(getErrorMessage(err));
-      } finally {
-        setGoogleLoading(false);
-      }
-    },
-    onError: () => toast.error('Google login failed'),
-  });
+
+  // This simple function now starts the flow.
+  const handleGoogleLogin = () => {
+    setGoogleLoading(true);
+    
+    // Point this EXACTLY to your backend route that triggers Passport
+    const backendUrl = import.meta.env.API_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/oauth/google`;
+  };
+  
+  
+  // when the backend redirects the user back to React.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+  
+    if (token) {
+      localStorage.setItem('accessToken', token);
+      // Optional: clean the URL so the token isn't visible in the bar
+      window.history.replaceState({}, document.title, "/login");
+      
+      // Your existing logic to load user data
+      fetchMe().then(() => {
+       
+          toast.success(`Welcome back, ${user}!`);
+          navigate('/dashboard', { replace: true });
+        
+        
+      });
+    }
+  }, [navigate]);
 
   return (
     <div className="w-full max-w-md animate-slide-up">

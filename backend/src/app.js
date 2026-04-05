@@ -9,8 +9,10 @@ import passport from './auth/passport.js';
 // Import Route Modules
 import authRoutes from './auth/routes/authroutes.js';
 import oauthRoutes from './auth/routes/oauthroutes.js';
+import profileRoutes from './auth/routes/profileRoutes.js';
 import userRoutes from './users/routes/userRoutes.js';
 import familyRoutes from './family/routes/familyRoutes.js';
+import guardianRoutes from './guardian/routes/guardianroutes.js';
 import contentRoutes from './content/routes/contentRoutes.js';
 import adminRoutes from './admin/routes/adminrouter.js';
 
@@ -47,8 +49,10 @@ const v1Router = express.Router();
 
 v1Router.use('/auth', authRoutes);
 v1Router.use('/auth/oauth', oauthRoutes);
+v1Router.use('/profiles', profileRoutes);
 v1Router.use('/users', userRoutes);
 v1Router.use('/family', familyRoutes);
+v1Router.use('/guardian', guardianRoutes);
 v1Router.use('/posts', contentRoutes);
 v1Router.use('/challenges', challengeRoutes);
 v1Router.use('/gamification', gamificationRoutes);

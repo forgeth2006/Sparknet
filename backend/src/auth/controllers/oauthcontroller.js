@@ -1,4 +1,13 @@
-import User from '../../models/User.js';
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    OAuth error API endpoint for frontend
+// @route   GET /api/oauth/error
+// @access  Public
+// ─────────────────────────────────────────────────────────────────────────────
+// export const oauthErrorApi = (req, res) => {
+//   const message = req.query.message || 'Unknown error';
+//   res.status(400).json({ success: false, message });
+// };
+import User from '../../models/user.js';
 
 import  { generateAccessToken, generateRefreshToken, hashRefreshToken } from '../../utils/Jwt.js';
 
@@ -74,10 +83,10 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    OAuth callback handler — runs after Passport verify succeeds
-// @route   GET /api/auth/google/callback
-//          GET /api/auth/facebook/callback
-//          GET /api/auth/twitter/callback
-//          GET /api/auth/apple/callback
+// @route   GET /api/oauth/google/callback
+//          GET /api/oauth/facebook/callback
+//          GET /api/oauth/twitter/callback
+//          GET /api/oauth/apple/callback
 // @access  Public (called by OAuth provider redirect)
 //
 // Two flows:
@@ -156,13 +165,13 @@ export const handleOAuthCallback = async (req, res) => {
     if (user.needsOnboarding) {
       // New OAuth user — send to onboarding (collect DOB, accept terms)
       return res.redirect(
-        `${process.env.CLIENT_URL}/auth/onboarding?token=${accessToken}`
+        `${process.env.CLIENT_URL}/Onboarding?token=${accessToken}`
       );
     }
 
     // Returning user — send to dashboard/home
     return res.redirect(
-      `${process.env.CLIENT_URL}/auth/callback?token=${accessToken}`
+      `${process.env.CLIENT_URL}/login?token=${accessToken}`
     );
 
   } catch (err) {
@@ -175,7 +184,7 @@ export const handleOAuthCallback = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    OAuth error handler — called when provider denies access
-// @route   GET /api/auth/*/callback  (Passport failure redirect)
+// @route   GET /api/oauth/*/callback  (Passport failure redirect)
 // @access  Public
 // ─────────────────────────────────────────────────────────────────────────────
 export const handleOAuthFailure = (req, res) => {
@@ -188,7 +197,7 @@ export const handleOAuthFailure = (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Complete onboarding for new OAuth users
 //          Collects dateOfBirth + terms acceptance (required post-OAuth)
-// @route   POST /api/auth/oauth/complete-onboarding
+// @route   POST /api/oauth/complete-onboarding
 // @access  Private (protect middleware)
 //
 // Called by frontend onboarding page. Once complete, needsOnboarding = false
@@ -265,7 +274,7 @@ export const completeOnboarding = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Get list of OAuth providers linked to the authenticated account
-// @route   GET /api/auth/oauth/linked-providers
+// @route   GET /api/oauth/linked-providers
 // @access  Private (protect middleware)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLinkedProviders = async (req, res) => {
@@ -293,7 +302,7 @@ export const getLinkedProviders = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Unlink an OAuth provider from the account
-// @route   DELETE /api/auth/oauth/unlink/:provider
+// @route   DELETE /api/oauth/unlink/:provider
 // @access  Private (protect middleware)
 //
 // Safety checks:
