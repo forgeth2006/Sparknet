@@ -41,52 +41,58 @@ import {
 } from '../controllers/interactionReadController.js';
 
 import { protect } from '../../middleware/Auth.js';
+import enforceChildControls from '../../middleware/enforceChildControls.js';
 
 const router = express.Router();
+
+// Shorthand — content enforcement checks scheduled hours + screen time for child accounts.
+// Also attaches req._childControls.controls.contentLevel so feed/post controllers
+// can filter by content level without a second DB call.
+const guardContent = enforceChildControls('content');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC ROUTES  (must be before /:id)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // POST MANAGEMENT
-router.post  ('/create', protect, createPost);            // Create a post
-router.get   ('/feed',   protect, getFeed);               // Get ranked feed
+router.post  ('/create', protect, guardContent, createPost);           // Create a post
+router.get   ('/feed',   protect, guardContent, getFeed);              // Get ranked feed
 
 // INTERACTION — static write
-router.post  ('/react',   protect, likePost);             // Like a post (body: { postId })
-router.post  ('/comment', protect, addComment);           // Add comment (body: { postId, content })
-router.post  ('/report',  protect, reportContent);        // Report content
+router.post  ('/react',   protect, guardContent, likePost);            // Like a post
+router.post  ('/comment', protect, guardContent, addComment);          // Add comment
+router.post  ('/report',  protect, reportContent);                     // Report (no content guard)
 
 // INTERACTION — static read
-router.get   ('/saved',   protect, getSavedPosts);        // Get current user's saved posts
+router.get   ('/saved',   protect, guardContent, getSavedPosts);       // Get saved posts
 
 // USER POSTS (profile page)
-router.get   ('/user/:userId', protect, getUserPosts);    // Get all posts by a user
+router.get   ('/user/:userId', protect, getUserPosts);                 // No content guard — summary view
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMMENT-SPECIFIC ROUTES  (before /:id to avoid collision)
 // ─────────────────────────────────────────────────────────────────────────────
-router.post  ('/comments/:commentId/reply',   protect, replyToComment);   // Reply to comment
-router.get   ('/comments/:commentId/replies', protect, getReplies);       // Load more replies
-router.delete('/comments/:commentId',         protect, deleteComment);    // Delete comment
+router.post  ('/comments/:commentId/reply',   protect, guardContent, replyToComment);
+router.get   ('/comments/:commentId/replies', protect, guardContent, getReplies);
+router.delete('/comments/:commentId',         protect, deleteComment);  // Delete own comment — no guard
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DYNAMIC ROUTES  /:id  (after all static routes)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Post CRUD
-router.get   ('/:id',  protect, getSinglePost);           // Get a single post
-router.put   ('/:id',  protect, editPost);                // Edit a post
-router.delete('/:id',  protect, deletePost);              // Delete a post
+router.get   ('/:id',  protect, guardContent, getSinglePost);         // View a single post
+router.put   ('/:id',  protect, guardContent, editPost);              // Edit own post
+router.delete('/:id',  protect, deletePost);                          // Delete own post — no guard
 
 // Reactions & saves on a post
-router.delete('/:id/react', protect, unlikePost);         // Unlike a post
-router.post  ('/:id/save',  protect, savePost);           // Save a post
-router.delete('/:id/save',  protect, unsavePost);         // Unsave a post
+router.delete('/:id/react', protect, unlikePost);                     // Unlike — no content guard
+router.post  ('/:id/save',  protect, guardContent, savePost);         // Save
+router.delete('/:id/save',  protect, unsavePost);                     // Unsave
 
 // Read — comments & likes on a post
-router.get   ('/:id/comments',                           protect, getComments);    // Get threaded comments
-router.get   ('/:id/comments/:commentId/replies',        protect, getReplies);     // Get replies (nested)
-router.get   ('/:id/likes',                              protect, getLikeStatus);  // Like count + did I like?
+router.get   ('/:id/comments',                        protect, guardContent, getComments);
+router.get   ('/:id/comments/:commentId/replies',     protect, guardContent, getReplies);
+router.get   ('/:id/likes',                           protect, guardContent, getLikeStatus);
 
 export default router;

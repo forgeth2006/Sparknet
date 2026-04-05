@@ -14,6 +14,7 @@
  */
 
 import Post from '../../models/Post.js';
+import { rankContentFeed } from '../../ai/services/rankingEngine.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -38,49 +39,8 @@ const RISK_THRESHOLDS = {
 // to your recommendation API — the rest of the pipeline stays the same.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Score a single post for feed ranking.
- * Returns a number: higher = appears earlier in feed.
- *
- * @param {Object} post     - Mongoose post document
- * @param {Object} options
- * @param {Number} options.creatorTrustScore - author's trustScore (0–100)
- * @param {Array<String>} options.userInterests - viewer's interests
- * @returns {Number} feed score
- */
-function rankPost(post, { creatorTrustScore = 100, userInterests = [] } = {}) {
-  const now = Date.now();
-  const ageHours = (now - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
-
-  // ── 1. Recency score (exponential decay, half-life ≈ 24 h) ───────────────
-  //       Score = 1.0 at 0 h, ≈ 0.5 at 24 h, ≈ 0.25 at 48 h
-  const recencyScore = Math.pow(0.5, ageHours / 24);
-
-  // ── 2. Engagement score (normalized, logarithmic to prevent viral dominance)
-  const likes    = post.likeCount    || 0;
-  const comments = post.commentCount || 0;
-  const saves    = post.saveCount    || 0;
-  const engagementScore = Math.log1p(likes * 1.0 + comments * 1.5 + saves * 2.0) / 10;
-
-  // ── 3. Creator trust bonus (0.0 – 0.2 range) ─────────────────────────────
-  const trustBonus = (creatorTrustScore / 100) * 0.2;
-
-  // ── 4. Risk penalty (0.0 – 0.5 range) ────────────────────────────────────
-  const riskPenalty = post.risk_score * 0.5;
-
-  // ── 5. Interest match bonus (0.0 – 0.5 range) ────────────────────────────
-  let interestBonus = 0;
-  if (userInterests.length > 0 && Array.isArray(post.tags)) {
-    const overlap = post.tags.filter(tag => userInterests.includes(tag.toLowerCase()));
-    if (overlap.length > 0) {
-      // 0.2 base bonus just for hitting 1 tag, up to 0.5 cap
-      interestBonus = Math.min(0.5, 0.2 + (overlap.length * 0.1));
-    }
-  }
-
-  const totalScore = recencyScore + engagementScore + trustBonus + interestBonus - riskPenalty;
-  return Math.max(0, totalScore);
-}
+// [LEGACY RANKING REMOVED]
+// Replaced by advanced deterministic engine in ai/services/rankingEngine.js
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN FEED BUILDER
@@ -104,6 +64,7 @@ export const buildFeed = async ({
   page  = 1,
   limit = FEED_PAGE_SIZE,
   userInterests = [],
+  contentLevel = 'strict',
 }) => {
   const skip = (page - 1) * limit;
 
@@ -113,10 +74,14 @@ export const buildFeed = async ({
     is_flagged: false,     // never show flagged posts to end users
   };
 
-  // Youth Safety Rule [SRS 5.5.3]:
-  // Child users only see content with risk_score below the SAFE threshold
+  // Youth Safety Rule [SRS 5.5.3] + Parent Rule overriding:
+  // Dynamically block content based on the Guardian's set contentLevel
   if (userRole === 'child') {
-    query.risk_score = { $lt: RISK_THRESHOLDS.SAFE };
+    let threshold = RISK_THRESHOLDS.SAFE; // 'strict' (default)
+    if (contentLevel === 'moderate') threshold = RISK_THRESHOLDS.MEDIUM;
+    else if (contentLevel === 'relaxed') threshold = RISK_THRESHOLDS.HIGH;
+    
+    query.risk_score = { $lt: threshold };
   }
 
   // ── Step 2: Fetch candidate posts from DB ─────────────────────────────────
@@ -132,16 +97,9 @@ export const buildFeed = async ({
     .lean();                       // plain JS objects — faster for scoring
 
   // ── Step 3: Rank each candidate ───────────────────────────────────────────
-  const scoredPosts = rawPosts.map((post) => ({
-    ...post,
-    _feedScore: rankPost(post, {
-      creatorTrustScore: post.user?.trustScore ?? 100,
-      userInterests
-    }),
-  }));
-
-  // ── Step 4: Sort by feed score descending ─────────────────────────────────
-  scoredPosts.sort((a, b) => b._feedScore - a._feedScore);
+  // The rankContentFeed uses the UserBehaviorProfile for cosine similarity
+  // and completely replaces the legacy loop math.
+  const scoredPosts = await rankContentFeed(rawPosts, userId);
 
   // ── Step 5: Slice to requested page ───────────────────────────────────────
   const pagePosts = scoredPosts.slice(0, limit);

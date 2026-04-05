@@ -115,7 +115,18 @@ export const getChildren = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 export const updateChildControls = async (req, res) => {
   try {
-    const { messagingAllowed, friendRequestsAllowed, contentLevel, screenTimeLimitMinutes, screenTimeEnabled } = req.body;
+    const {
+      messagingAllowed,
+      friendRequestsAllowed,
+      contentLevel,
+      screenTimeLimitMinutes,
+      screenTimeEnabled,
+      scheduledHoursStart,
+      scheduledHoursEnd,
+      // Allowlist operations — pass one of these, not both
+      addContact,    // a single User ObjectId to permit
+      removeContact, // a single User ObjectId to revoke
+    } = req.body;
 
     const guardian = await User.findById(req.user._id);
     const linkIndex = guardian.childLinks.findIndex(
@@ -128,11 +139,39 @@ export const updateChildControls = async (req, res) => {
 
     const controls = guardian.childLinks[linkIndex].controls;
 
-    if (messagingAllowed !== undefined) controls.messagingAllowed = messagingAllowed;
-    if (friendRequestsAllowed !== undefined) controls.friendRequestsAllowed = friendRequestsAllowed;
-    if (contentLevel !== undefined) controls.contentLevel = contentLevel;
+    // ── Scalar updates ────────────────────────────────────────────────────────
+    if (messagingAllowed       !== undefined) controls.messagingAllowed       = messagingAllowed;
+    if (friendRequestsAllowed  !== undefined) controls.friendRequestsAllowed  = friendRequestsAllowed;
+    if (contentLevel           !== undefined) controls.contentLevel           = contentLevel;
     if (screenTimeLimitMinutes !== undefined) controls.screenTimeLimitMinutes = screenTimeLimitMinutes;
-    if (screenTimeEnabled !== undefined) controls.screenTimeEnabled = screenTimeEnabled;
+    if (screenTimeEnabled      !== undefined) controls.screenTimeEnabled      = screenTimeEnabled;
+
+    // ── Scheduled hours ───────────────────────────────────────────────────────
+    if (scheduledHoursStart !== undefined) {
+      if (scheduledHoursStart < 0 || scheduledHoursStart > 23) {
+        return res.status(400).json({ success: false, message: 'scheduledHoursStart must be 0–23' });
+      }
+      controls.scheduledHoursStart = scheduledHoursStart;
+    }
+    if (scheduledHoursEnd !== undefined) {
+      if (scheduledHoursEnd < 0 || scheduledHoursEnd > 23) {
+        return res.status(400).json({ success: false, message: 'scheduledHoursEnd must be 0–23' });
+      }
+      controls.scheduledHoursEnd = scheduledHoursEnd;
+    }
+
+    // ── Messaging allowlist (idempotent add / remove) ─────────────────────────
+    if (addContact) {
+      const alreadyAdded = controls.allowedMessagingContacts
+        .map(String)
+        .includes(addContact.toString());
+      if (!alreadyAdded) controls.allowedMessagingContacts.push(addContact);
+    }
+    if (removeContact) {
+      controls.allowedMessagingContacts = controls.allowedMessagingContacts.filter(
+        (id) => id.toString() !== removeContact.toString()
+      );
+    }
 
     guardian.childLinks[linkIndex].controls = controls;
     guardian.markModified('childLinks');

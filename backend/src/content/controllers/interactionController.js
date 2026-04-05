@@ -15,6 +15,7 @@ import SavedPost from '../../models/SavedPost.js';
 import Post      from '../../models/Post.js';
 import { canInteractWithUser } from '../../users/services/connectionService.js';
 import appEvents, { EVENTS } from '../../events/eventEmitter.js';
+import ActivityLog, { ACTIVITY_TYPES } from '../../models/ActivityLog.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIKE POST
@@ -143,6 +144,10 @@ export const addComment = async (req, res) => {
     ]);
 
     await newComment.populate('user', 'username oauthAvatarUrl');
+
+    if (req.user.role === 'child') {
+      ActivityLog.log(ACTIVITY_TYPES.COMMENT_ADDED, userId, newComment._id, 'Comment');
+    }
 
     // Push notification (Decoupled Stage)
     if (post.user.toString() !== userId.toString()) {

@@ -43,11 +43,32 @@ const childLinkSchema = new mongoose.Schema({
   linkedAt: { type: Date, default: Date.now },
   approvedAt: { type: Date },
   controls: {
+    // ─── Messaging Controls ──────────────────────────────────
+    // Master switch: false = all messaging blocked regardless of allowlist
     messagingAllowed: { type: Boolean, default: false },
+
+    // Allowlist-based messaging: if populated, child can ONLY message these users.
+    // An empty array + messagingAllowed=true means no contact restriction (any mutual connection).
+    // The guardian adds/removes User ObjectIds here via PATCH /guardian/children/:id/controls
+    allowedMessagingContacts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // ─── Social Controls ─────────────────────────────────────
     friendRequestsAllowed: { type: Boolean, default: false },
+
+    // ─── Content Controls ────────────────────────────────────
+    // 'strict'   → only low-risk posts (risk_score < 0.3)
+    // 'moderate' → low + medium risk (risk_score < 0.6)
+    // 'relaxed'  → all non-flagged content
     contentLevel: { type: String, enum: ['strict', 'moderate', 'relaxed'], default: 'strict' },
-    screenTimeLimitMinutes: { type: Number, default: 120 },
+
+    // ─── Screen Time Controls ────────────────────────────────
+    screenTimeLimitMinutes: { type: Number, default: 120, min: 0, max: 1440 },
     screenTimeEnabled: { type: Boolean, default: true },
+
+    // Scheduled access hours — child can only log in between these hours (0–23, inclusive).
+    // Defaults span the full day so existing linked accounts are not broken.
+    scheduledHoursStart: { type: Number, default: 0, min: 0, max: 23 },
+    scheduledHoursEnd:   { type: Number, default: 23, min: 0, max: 23 },
   },
 });
 

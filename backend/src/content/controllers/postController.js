@@ -15,8 +15,10 @@
 
 import Post from '../../models/Post.js';
 import User from '../../models/User.js';
-import { analyzeContent, applyTrustPenalty } from '../../moderation/services/moderationService.js';
+import { applyTrustPenalty } from '../../moderation/services/moderationService.js';
+import { classifyContentSafety as analyzeContent } from '../../ai/services/safetyEngine.js';
 import { buildFeed, getUserPostsFeed } from '../services/feedService.js';
+import ActivityLog, { ACTIVITY_TYPES } from '../../models/ActivityLog.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE POST
@@ -87,6 +89,17 @@ export const createPost = async (req, res) => {
     // Populate user for response
     await newPost.populate('user', 'username oauthAvatarUrl role');
 
+    // ── 6. Activity Logging for Youth Monitoring ──
+    if (userRole === 'child') {
+      ActivityLog.log(
+        ACTIVITY_TYPES.POST_CREATED, 
+        userId, 
+        newPost._id, 
+        'Post', 
+        { riskScore: risk_score }
+      );
+    }
+
     return res.status(201).json({
       success: true,
       message: is_flagged
@@ -109,11 +122,15 @@ export const getFeed = async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
     const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    
+    // Guardian's requested comfort level (attached by middleware)
+    const contentLevel = req._childControls?.controls?.contentLevel || 'strict';
 
     const { posts, pagination } = await buildFeed({
       userId:   req.user._id.toString(),
       userRole: req.user.role,
       userInterests: req.user.interests || [],
+      contentLevel,
       page,
       limit,
     });
