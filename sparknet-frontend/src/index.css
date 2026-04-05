@@ -2,61 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  --color-primary: #0040a1;
+  --color-secondary: #1b6d24;
+  --color-tertiary: #004f5a;
+  
+  --bg-layer-0: #faf8ff;
+  --bg-layer-1: #f0edf7;
+  --bg-layer-2: #ffffff;
+  --bg-layer-glass: rgba(255, 255, 255, 0.8);
+  
+  --text-on-surface: #191b22;
+  --text-muted: #5e616f;
+  --text-inverse: #ffffff;
+}
+
 @layer base {
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    background-color: #0a0a0f;
-    color: #e2e2f0;
-    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg-layer-0) !important;
+    color: var(--text-on-surface) !important;
+    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+  
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  
+  h1 { font-size: 3.5rem; line-height: 1.1; font-weight: 800; }
+  h2 { font-size: 2.25rem; font-weight: 700; }
+
+  /* OVERWRITING LEGACY THEME HARDCODED UTILITIES */
+  /* Remove lines/borders forcefully to enforce the "No-Line" Rule */
+  .border, .border-t, .border-b, .border-l, .border-r,
+  .border-dark-500, .border-gray-700, hr {
+    border-color: transparent !important;
+    border-width: 0px !important;
+  }
+
+  /* Force background changes away from old dark mode classes */
+  .bg-dark-900, .bg-dark-800, .bg-dark-700 {
+    background-color: transparent !important;
+  }
+  .bg-[#0a0a0f], .bg-[#111118] { background-color: var(--bg-layer-0) !important; }
 }
 
 @layer components {
+  /* ─── Cards & Surfaces ─── */
   .spark-card {
-    @apply bg-dark-800 border border-dark-500 rounded-2xl;
+    @apply rounded-3xl p-6 transition-all duration-300;
+    background-color: var(--bg-layer-2) !important;
+    /* Tonal Layering / Ambient Shadows - 32px blur at 6% matching on_surface (#191b22) */
+    box-shadow: 0px 8px 32px rgba(25, 27, 34, 0.06) !important;
+    border: none !important;
   }
+  
+  /* Background logic for sections if explicitly used */
+  .spark-surface-low {
+    background-color: var(--bg-layer-1);
+    border-radius: 1.5rem;
+  }
+
+  /* Glassmorphism container */
+  .spark-glass {
+    background-color: var(--bg-layer-glass);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 40px rgba(25, 27, 34, 0.06);
+  }
+
+  /* ─── Inputs ─── */
   .spark-input {
-    @apply w-full bg-dark-700 border border-dark-500 rounded-xl px-4 py-3
-           text-white placeholder-gray-600 text-sm
-           focus:outline-none focus:border-spark-500 focus:ring-1 focus:ring-spark-500/30
-           transition-all duration-200;
+    @apply w-full rounded-2xl px-5 py-4;
+    background-color: #eceaf3 !important; /* surface_container_highest */
+    color: var(--text-on-surface) !important;
+    border: 2px solid transparent !important;
+    outline: none !important;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
   }
+  .spark-input::placeholder {
+    color: var(--text-muted) !important;
+  }
+  .spark-input:focus {
+    background-color: var(--bg-layer-2) !important;
+    /* Ghost border fallback: outline_variant token at 40% (as requested for input) */
+    border: 2px solid rgba(0, 64, 161, 0.4) !important; 
+    box-shadow: 0 4px 12px rgba(0, 64, 161, 0.05) !important;
+  }
+
+  /* ─── Buttons ─── */
   .spark-btn {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-           font-semibold text-sm tracking-wide transition-all duration-200
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-3 px-8 py-3.5 
+           font-semibold text-sm tracking-wide transition-all duration-300 cursor-pointer;
+    border-radius: 9999px !important; /* Pill shaped */
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    border: none !important;
   }
+  
   .spark-btn-primary {
-    @apply spark-btn bg-spark-500 hover:bg-spark-600 text-white
-           shadow-lg shadow-spark-500/20 hover:shadow-spark-500/40
-           hover:-translate-y-0.5 active:translate-y-0;
+    @apply spark-btn;
+    color: var(--text-inverse) !important;
+    background: linear-gradient(135deg, var(--color-primary), #005ce6) !important;
+    /* Subtle 0.5px white 10% inner glow on top edge */
+    box-shadow: inset 0 1px 0px rgba(255,255,255,0.15), 0 8px 20px rgba(0, 64, 161, 0.15) !important;
   }
+  .spark-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0px rgba(255,255,255,0.25), 0 12px 24px rgba(0, 64, 161, 0.25) !important;
+  }
+  
+  .spark-btn-secondary {
+    @apply spark-btn;
+    background-color: #e5f3e7 !important; /* Secondary Container */
+    color: var(--color-secondary) !important;
+  }
+  .spark-btn-secondary:hover {
+    background-color: #d1ead5 !important;
+  }
+
   .spark-btn-ghost {
-    @apply spark-btn bg-transparent border border-dark-500 hover:border-dark-400
-           text-gray-300 hover:text-white hover:bg-dark-700;
+    @apply spark-btn bg-transparent;
+    color: var(--color-primary) !important;
   }
+  .spark-btn-ghost:hover {
+    background-color: rgba(0, 64, 161, 0.06) !important;
+  }
+
   .spark-btn-danger {
-    @apply spark-btn bg-red-500/10 border border-red-500/30 text-red-400
-           hover:bg-red-500/20 hover:border-red-500/50;
+    @apply spark-btn bg-red-50 text-red-600;
   }
+  .spark-btn-danger:hover {
+    background-color: #fee2e2;
+  }
+
+  /* ─── Badges & Shields ─── */
+  /* Family Control indicator shield */
+  .spark-shield {
+    @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-bold tracking-wider;
+    border-radius: 9999px !important;
+    background-color: #e0f2f5 !important;
+    color: var(--color-tertiary) !important;
+  }
+
   .spark-label {
-    @apply block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2;
+    @apply block text-xs font-semibold tracking-widest mb-2;
+    color: var(--text-muted) !important;
+    font-family: 'Inter', sans-serif;
   }
+  
   .spark-badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium;
+    @apply inline-flex items-center px-3 py-1 font-medium text-xs;
+    border-radius: 9999px !important;
+    background-color: rgba(0, 64, 161, 0.08) !important;
+    color: var(--color-primary) !important;
   }
+  
+  /* Fallback glow line */
   .glow-line {
-    @apply h-px w-full bg-gradient-to-r from-transparent via-spark-500/40 to-transparent;
+    @apply h-px w-full;
+    background: transparent !important; 
   }
 }
 
-/* Scrollbar */
+/* Scrollbar Light Theme */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #111118; }
-::-webkit-scrollbar-thumb { background: #3e3e52; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #f97316; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #dcdcea; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
 
-/* Page transition */
-.page-enter { animation: slideUp 0.35s ease forwards; }
+/* Animations */
+.page-enter { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
