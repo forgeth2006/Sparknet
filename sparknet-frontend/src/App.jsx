@@ -20,6 +20,11 @@ import { ResendVerificationPage } from './pages/auth/ResendVerificationPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { HomeFeedPage } from './pages/HomeFeedPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { ChallengesExplorerPage } from './pages/challenges/ChallengesExplorerPage';
+import { ChallengeDetailsPage } from './pages/challenges/ChallengeDetailsPage';
 
 // Guardian pages
 import { GuardianDashboard } from './pages/guardian/GuardianDashboard';
@@ -53,6 +58,11 @@ export default function App() {
         {/* ── Protected App Routes ── */}
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/feed" element={<HomeFeedPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/challenges" element={<ChallengesExplorerPage />} />
+          <Route path="/challenges/:id" element={<ChallengeDetailsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/change-password" element={<ChangePasswordPage />} />
           
@@ -67,7 +77,7 @@ export default function App() {
         </Route>
 
         {/* ── Redirects ── */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/feed" replace />} />
         <Route path="*" element={
           <div className="min-h-screen bg-dark-900 flex items-center justify-center">
             <div className="text-center">

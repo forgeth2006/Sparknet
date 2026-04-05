@@ -29,19 +29,18 @@ export const Navbar = () => {
           </Link>
 
           <div className="flex items-center gap-3">
-            {isAdmin && (
-              <Link to="/admin" className="text-sm text-gray-400 hover:text-spark-400 font-display font-600 transition-colors">
-                Admin
+            <div className="hidden sm:flex items-center gap-6 mr-4">
+              <Link to="/feed" className="text-sm text-gray-400 hover:text-white font-display font-600 transition-colors">
+                Home
               </Link>
-            )}
-            {isGuardian && (
-              <Link to="/guardian" className="text-sm text-gray-400 hover:text-spark-400 font-display font-600 transition-colors">
-                Guardian
+              <Link to="/challenges" className="text-sm text-gray-400 hover:text-white font-display font-600 transition-colors">
+                Challenges
               </Link>
-            )}
-            <Link to="/dashboard" className="text-sm text-gray-400 hover:text-white font-display font-600 transition-colors">
-              Dashboard
-            </Link>
+              <Link to="/notifications" className="text-sm text-gray-400 hover:text-white font-display font-600 transition-colors relative">
+                Notifications
+                <span className="absolute -top-1 -right-2 w-2 h-2 bg-spark-500 rounded-full animate-pulse"></span>
+              </Link>
+            </div>
 
             {/* User dropdown */}
             <div className="relative">

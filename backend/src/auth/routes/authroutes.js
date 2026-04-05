@@ -10,13 +10,13 @@ import { protect } from '../../middleware/Auth.js';
 import { loginLimiter, registerLimiter, sensitiveActionLimiter } from '../../middleware/Ratelimiter.js';
 
 // Public
-router.post('/register', registerLimiter, register);
+router.post('/signup', registerLimiter, register);
 router.post('/login', loginLimiter, login);
 router.post('/refresh', refreshToken);
-router.get('/verify-email/:token', verifyEmail);
+router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', sensitiveActionLimiter, resendVerification);
-router.post('/forgot-password', sensitiveActionLimiter, forgotPassword);
-router.post('/reset-password/:token', resetPassword);
+router.post('/reset-password-request', sensitiveActionLimiter, forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Protected
 router.use(protect);
