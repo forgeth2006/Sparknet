@@ -25,6 +25,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ChallengesExplorerPage } from './pages/challenges/ChallengesExplorerPage';
 import { ChallengeDetailsPage } from './pages/challenges/ChallengeDetailsPage';
+import { MessagingPage } from './pages/MessagingPage';
 
 // Guardian pages
 import { GuardianDashboard } from './pages/guardian/GuardianDashboard';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/challenges" element={<ChallengesExplorerPage />} />
           <Route path="/challenges/:id" element={<ChallengeDetailsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/messages" element={<MessagingPage />} />
           <Route path="/change-password" element={<ChangePasswordPage />} />
           
           {/* Guardian Routes */}

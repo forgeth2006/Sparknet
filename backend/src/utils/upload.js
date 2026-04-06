@@ -1,22 +1,26 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-// Ensure upload directory exists
-const uploadDir = 'public/uploads/avatars';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'sparknet-avatars',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }],
+    public_id: (req, file) => {
+      // Save as: user-id-timestamp
+      const uniqueSuffix = Date.now();
+      return `${req.user._id}-${uniqueSuffix}`;
+    },
   },
-  filename: (req, file, cb) => {
-    // Save as: user-id-timestamp.jpg
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${req.user._id}-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
 });
 
 const fileFilter = (req, file, cb) => {

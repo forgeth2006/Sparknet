@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi } from '../api/authApi';
+import { connectSocket, disconnectSocket } from '../api/socket';
 
 const AuthContext = createContext(null);
 
@@ -16,9 +17,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await authApi.getMe();
       setUser(data.user);
+      connectSocket(token); // Connect socket on successful fetch
     } catch {
       setUser(null);
       localStorage.removeItem('accessToken');
+      disconnectSocket();
     } finally {
       setLoading(false);
     }
@@ -26,11 +29,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     fetchMe();
+    return () => disconnectSocket(); // Cleanup on unmount
   }, [fetchMe]);
 
   const login = async (credentials) => {
     const { data } = await authApi.login(credentials);
-    if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
+    if (data.accessToken) {
+      localStorage.setItem('accessToken', data.accessToken);
+      connectSocket(data.accessToken); // Connect socket on login
+    }
     setUser(data.user);
     return data;
   };
@@ -39,12 +46,14 @@ export const AuthProvider = ({ children }) => {
     try { await authApi.logout(); } catch {}
     localStorage.removeItem('accessToken');
     setUser(null);
+    disconnectSocket(); // Disconnect socket on logout
   };
 
   const logoutAll = async () => {
     try { await authApi.logoutAll(); } catch {}
     localStorage.removeItem('accessToken');
     setUser(null);
+    disconnectSocket();
   };
 
   const isAdmin = user?.role === 'admin';

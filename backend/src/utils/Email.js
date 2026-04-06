@@ -1,22 +1,30 @@
 import nodemailer from 'nodemailer';
 
 const createTransport = () => {
+  // Using 'gmail' service is the recommended way for Gmail SMTP
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASS, // Use Google App Password, not regular password
+    },
   });
 };
 
 const sendEmail = async ({ to, subject, html }) => {
-  const transporter = createTransport();
-  await transporter.sendMail({
-    from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
-    to,
-    subject,
-    html,
-  });
+  try {
+    const transporter = createTransport();
+    await transporter.sendMail({
+      from: `"${process.env.FROM_NAME}" <${process.env.GMAIL_USER}>`, // Use Gmail user as authenticated sender
+      to,
+      subject,
+      html,
+    });
+  } catch (error) {
+    console.error(`Email Error [${subject}]:`, error.message);
+    // In production, you might want to throw error if critical
+    // throw error; 
+  }
 };
 
 const sendVerificationEmail = async (email, token) => {

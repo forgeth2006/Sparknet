@@ -37,7 +37,7 @@ export const RegisterPage = () => {
     try {
       const payload = { ...form };
       if (!isMinor) delete payload.guardianEmail;
-      const { data } = await authApi.register(payload);
+      const { data } = await authApi.signup(payload);
       toast.success(data.message, { duration: 6000 });
       navigate('/login');
     } catch (err) {

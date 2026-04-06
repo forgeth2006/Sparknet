@@ -1,58 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PostCard } from '../components/posts/PostSystem';
 import { useAuth } from '../context/AuthContext';
-
-// Dummy data for initial display
-const dummyPosts = [
-  {
-    id: 1,
-    authorName: 'Alex Mercer',
-    authorId: 101,
-    content: 'Just finished my first React Native app! The learning curve was steep but totally worth it. Now diving into the deployment process. 🚀📱',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    likesCount: 24,
-    commentsCount: 5,
-    isLikedByMe: true,
-    tags: ['reactnative', 'coding', 'learning']
-  },
-  {
-    id: 2,
-    authorName: 'Sarah Chen',
-    authorId: 102,
-    content: 'Nature is the best reset button. Spent the weekend hiking in the mountains. 🏔️🌲',
-    mediaUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    likesCount: 112,
-    commentsCount: 18,
-    isLikedByMe: false,
-    tags: ['photography', 'nature', 'hiking']
-  }
-];
+import { postApi } from '../api/postApi';
+import toast from 'react-hot-toast';
 
 export const HomeFeedPage = () => {
   const { user } = useAuth();
-  const [posts, setPosts] = useState(dummyPosts);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
 
-  const handleCreatePost = (e) => {
+  const fetchFeed = async () => {
+    try {
+      setLoading(true);
+      const { data } = await postApi.getFeed();
+      setPosts(data.posts || []);
+    } catch (err) {
+      toast.error('Failed to load feed');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, []);
+
+  const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
 
-    const newPost = {
-      id: Date.now(),
-      authorName: user?.username || 'You',
-      authorId: user?.id || 'me',
-      content: newPostContent,
-      createdAt: new Date().toISOString(),
-      likesCount: 0,
-      commentsCount: 0,
-      isLikedByMe: false,
-      tags: []
-    };
-
-    setPosts([newPost, ...posts]);
-    setNewPostContent('');
+    try {
+      await postApi.createPost({ content: newPostContent });
+      toast.success('Post shared!');
+      setNewPostContent('');
+      fetchFeed(); // Refresh feed after posting
+    } catch (err) {
+      toast.error('Failed to create post');
+    }
   };
+
+  if (loading && posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+        <div className="w-12 h-12 border-4 border-spark-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500 font-display">Igniting your feed...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 page-enter">
@@ -103,9 +99,15 @@ export const HomeFeedPage = () => {
 
       {/* Feed List */}
       <div className="space-y-6">
-        {posts.map(post => (
-          <PostCard key={post.id} post={post} />
-        ))}
+        {posts.length === 0 ? (
+          <div className="spark-card p-12 text-center">
+            <p className="text-gray-500">No posts yet. Be the first to share something!</p>
+          </div>
+        ) : (
+          posts.map(post => (
+            <PostCard key={post._id || post.id} post={post} />
+          ))
+        )}
       </div>
     </div>
   );

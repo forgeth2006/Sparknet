@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import { apiLimiter } from './middleware/Ratelimiter.js';
 import passport from './auth/passport.js';
 
@@ -41,7 +42,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV === 'production') {
+  app.use(morgan('combined'));
+  app.use(compression());
+} else {
   app.use(morgan('dev'));
 }
 
@@ -82,8 +86,23 @@ app.use((req, res) => {
 
 // Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({ success: false, message: err.message || 'Internal server error' });
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+
+  if (process.env.NODE_ENV === 'production') {
+    // Hide stack trace and internal details in production
+    res.status(statusCode).json({ 
+      success: false, 
+      message: statusCode === 500 ? 'Something went wrong on our end' : message 
+    });
+  } else {
+    console.error(err.stack);
+    res.status(statusCode).json({ 
+      success: false, 
+      message, 
+      stack: err.stack 
+    });
+  }
 });
 
 export default app;
